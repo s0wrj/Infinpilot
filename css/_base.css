@@ -1,11 +1,12 @@
-/* 包含 Pagetalk 插件的基础样式、全局布局（如 body, header, footer）、通用组件（如按钮、模态框）和滚动条样式。 */
+/* 包含 Infinpilot 插件的基础样式、全局布局（如 body, header, footer）、通用组件（如按钮、模态框）和滚动条样式。 */
+/* 根据 taste-skill 设计原则优化：专业排版、中性色调 */
 
 /* 基本样式重置 */
    * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 /* 列表缩进 */
 ul, ol {
@@ -25,7 +26,8 @@ body {
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    /* border-left: 1px solid var(--border-color); /* 移除左侧边框 */
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
 }
 
 .container {
@@ -103,33 +105,62 @@ footer {
 .footer-tabs {
     display: flex;
     list-style: none;
-    gap: var(--spacing-md); /* Reduced gap */
+    gap: var(--spacing-xs);
     margin-left: auto;
 }
 
 .footer-tab {
-    padding: var(--spacing-xs) var(--spacing-sm); /* Adjusted padding */
+    padding: 8px 16px;
     cursor: pointer;
     position: relative;
     color: var(--text-secondary);
-    transition: all 0.2s ease; /* Faster transition */
+    transition: all 0.25s var(--ease-smooth);
     font-weight: 500;
-    font-size: 11px;
+    font-size: 12px;
     border-radius: var(--radius-lg);
-    background-color: transparent; /* Default transparent */
-    border: 1px solid transparent; /* Add transparent border for layout consistency */
+    background-color: transparent;
+    border: 1px solid transparent;
+    overflow: hidden;
+}
+
+.footer-tab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--primary-color);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-smooth);
+    border-radius: inherit;
 }
 
 .footer-tab:hover {
     color: var(--primary-color);
-    background-color: var(--button-hover-bg); /* Use standard hover */
+    background-color: var(--button-hover-bg);
+    transform: translateY(-1px);
+}
+
+.footer-tab:hover::before {
+    opacity: 0.05;
 }
 
 .footer-tab.active {
     color: var(--primary-color);
     font-weight: 600;
-    background-color: rgba(76, 110, 245, 0.15); /* Use slightly darker active background */
-    border-color: rgba(76, 110, 245, 0.2); /* Add subtle border when active */
+    background-color: var(--button-hover-bg);
+    border-color: var(--accent-border);
+    box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.footer-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background: var(--primary-color);
+    border-radius: 1px;
 }
 
 /* 连接指示器 */
@@ -197,24 +228,48 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: clamp(24px, 7vw, 28px); 
-    height: clamp(24px, 7vw, 28px); 
-    border-radius: var(--radius-full);
+    width: clamp(24px, 7vw, 28px);
+    height: clamp(24px, 7vw, 28px);
+    border-radius: var(--radius-md);
     cursor: pointer;
     color: var(--text-secondary);
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-smooth);
     padding: 0;
-    flex-shrink: 0; /* 防止按钮被压缩 */
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--primary-color);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-smooth);
+    border-radius: inherit;
 }
 
 .action-button:hover {
-    color: var(--error-color); /* 默认悬停为错误色，特定按钮可覆盖 */
-    background-color: rgba(234, 67, 53, 0.1);
+    color: var(--primary-color);
+    background-color: var(--button-hover-bg);
+    transform: translateY(-1px);
+}
+
+.action-button:hover::before {
+    opacity: 0.08;
+}
+
+.action-button:active {
+    transform: scale(0.92);
+    transition: transform 0.1s var(--ease-out);
 }
 
 .action-button svg {
-    width: 16px; 
-    height: 16px; 
+    width: 16px;
+    height: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 /* 关闭面板按钮特定样式 */
@@ -243,29 +298,57 @@ footer {
 
 /* 通用图标按钮 (例如 Agent 设置中的导入/导出/添加按钮) */
 .icon-btn {
-    width: clamp(28px, 8vw, 32px);  /* 增大按钮尺寸 */
-    height: clamp(28px, 8vw, 32px); /* 增大按钮尺寸 */
-    border-radius: var(--radius-full);
+    width: clamp(28px, 8vw, 32px);
+    height: clamp(28px, 8vw, 32px);
+    border-radius: var(--radius-md);
     border: none;
     background-color: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-smooth);
     color: var(--text-secondary);
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.icon-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--primary-color);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-smooth);
+    border-radius: inherit;
 }
 
 .icon-btn:hover {
-    background-color: var(--button-hover-bg); /* 使用标准悬停背景 */
+    background-color: var(--button-hover-bg);
     color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.icon-btn:hover::before {
+    opacity: 0.06;
+}
+
+.icon-btn:active {
+    transform: scale(0.9);
+    transition: transform 0.1s var(--ease-out);
 }
 
 .icon-btn svg {
     width: clamp(16px, 4.5vw, 18px); /* 增大图标尺寸 */
     height: clamp(16px, 4.5vw, 18px); /* 增大图标尺寸 */
-    transition: all 0.2s ease; /* 添加过渡效果 */
+    position: relative;
+    z-index: 1;
+    transition: transform 0.25s var(--ease-smooth);
+}
+
+.icon-btn:hover svg {
+    transform: scale(1.08);
 }
 
 
@@ -298,42 +381,118 @@ footer {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.4);
     overflow: auto;
-    animation: fadeIn 0.3s ease;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-out;
 }
 
 .changelog-content {
     position: relative;
     background-color: var(--card-background);
-    margin: 12% auto; /* 位置再向上移 */
-    padding: var(--spacing-lg); /* 增大内边距 */
+    margin: 10% auto;
+    padding: var(--spacing-lg);
     width: 85%;
-    max-width: 400px;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    animation: slideInUp 0.3s ease;
+    max-width: 420px;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-color);
+    animation: slideInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes slideInUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from { transform: translateY(20px) scale(0.96); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Entrance Animations */
+@keyframes slideInFromBottom {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromLeft {
+    from {
+        transform: translateX(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Animation Classes */
+.animate-slide-up {
+    animation: slideInFromBottom 0.5s var(--ease-smooth) forwards;
+    opacity: 0;
+}
+
+.animate-slide-left {
+    animation: slideInFromLeft 0.5s var(--ease-smooth) forwards;
+    opacity: 0;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.4s var(--ease-bounce) forwards;
+    opacity: 0;
+}
+
+/* Staggered Animation Delays */
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.1s; }
+.delay-3 { animation-delay: 0.15s; }
+.delay-4 { animation-delay: 0.2s; }
+.delay-5 { animation-delay: 0.25s; }
+.delay-6 { animation-delay: 0.3s; }
+
+/* Pulse Animation */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+    animation: pulse 2s var(--ease-smooth) infinite;
+}
+
+/* Spin Animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .changelog-header {
-    margin-bottom: var(--spacing-md); /* 增大头部下边距 */
+    margin-bottom: var(--spacing-md);
     text-align: center;
 }
 
 .changelog-header h2 {
-    font-size: 1.4rem; /* 增大标题字体 */
+    font-size: 1.25rem;
     color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    letter-spacing: -0.02em;
 }
 
 .changelog-list {
@@ -413,17 +572,23 @@ footer {
     color: white;
     border: none;
     border-radius: var(--radius-md);
-    padding: var(--spacing-sm) var(--spacing-lg); /* 增大按钮内边距 */
+    padding: 10px 24px;
     font-size: 0.9rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 80px; /* 设置最小宽度 */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 80px;
     text-align: center;
 }
 
 .changelog-ok-btn:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.changelog-ok-btn:active {
+    transform: translateY(0);
 }
 
 /* 确保所有内容容器不会溢出父容器 */

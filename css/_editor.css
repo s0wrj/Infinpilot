@@ -1,0 +1,919 @@
+/* === Editor General Container === */
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--background-color);
+}
+
+/* Light theme - Markdown editor text color */
+body:not(.dark-mode) .editor-main .CodeMirror {
+    color: #000000 !important;
+}
+
+body:not(.dark-mode) .editor-main .CodeMirror .CodeMirror-lines {
+    color: #000000 !important;
+}
+
+body:not(.dark-mode) .editor-main .CodeMirror pre {
+    color: #000000 !important;
+}
+
+/* === Toolbar === */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.toolbar-spacer {
+    flex-grow: 1;
+}
+
+.editor-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Use smaller gap for compactness */
+}
+
+.editor-toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background-color: var(--border-color);
+    margin: 0 var(--spacing-sm);
+}
+
+/* === Tool Buttons === */
+.editor-tool-button {
+    background: none;
+    border: none;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.editor-tool-button:hover {
+    background-color: var(--button-hover-bg);
+    color: var(--primary-hover);
+}
+
+.editor-tool-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+.editor-project-bar {
+    display: none;
+}
+
+.editor-project-selector,
+.editor-project-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.editor-project-label,
+.editor-project-file-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.editor-project-selector select {
+    min-width: 180px;
+    max-width: 240px;
+}
+
+.editor-project-create-btn,
+.editor-project-action-btn {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-background);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 7px 10px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.editor-project-create-btn:hover,
+.editor-project-action-btn:hover {
+    background: var(--button-hover-bg);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.editor-project-create-btn:disabled,
+.editor-project-action-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+    background: var(--card-background);
+}
+
+.file-tree-project {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--card-background) 94%, var(--primary-color) 6%);
+}
+
+.file-tree-project .editor-project-selector {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+}
+
+.file-tree-project .editor-project-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.file-tree-project .editor-project-selector select {
+    min-width: 0;
+    max-width: none;
+}
+
+.file-tree-project .editor-project-file-status {
+    line-height: 1.4;
+}
+
+.editor-toolbar-group.view-group .editor-tool-button.active {
+    color: var(--primary-color);
+    background-color: var(--button-hover-bg);
+}
+
+/* === Dropdown Containers === */
+.dropdown-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Insert & AI Dropdown Menu */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    min-width: 180px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-container:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-color);
+    font-size: 13px;
+}
+
+.dropdown-menu button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+
+/* === Editor Files Bar === */
+.editor-files-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary, #f5f5f5);
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    padding: 4px 8px;
+    gap: 4px;
+    min-height: 36px;
+}
+
+.editor-files-tabs {
+    display: flex;
+    flex: 1;
+    overflow-x: auto;
+    gap: 4px;
+}
+
+.editor-files-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.editor-files-tabs::-webkit-scrollbar-thumb {
+    background: var(--border-color, #ccc);
+    border-radius: 2px;
+}
+
+.editor-file-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    color: var(--text-secondary, #666);
+}
+
+.editor-file-tab:hover {
+    background: var(--button-hover-bg, #e8e8e8);
+}
+
+.editor-file-tab.active {
+    background: var(--primary-color, #0078d4);
+    color: #fff;
+    border-color: var(--primary-color, #0078d4);
+}
+
+.editor-file-tab .file-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 10px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.editor-file-tab .file-close:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.1);
+}
+
+.editor-file-tab.active .file-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.editor-new-file-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px dashed var(--border-color, #ccc);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s ease;
+}
+
+.editor-new-file-btn:hover {
+    border-color: var(--primary-color, #0078d4);
+    color: var(--primary-color, #0078d4);
+    background: rgba(0,120,212,0.05);
+}
+
+.editor-tree-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary, #666);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.editor-tree-toggle:hover {
+    background: var(--button-hover-bg, #e8e8e8);
+}
+
+/* File Tree Panel - Vertical Tree Style */
+.editor-file-tree {
+    display: none;
+    position: absolute;
+    top: 36px;
+    left: 0;
+    width: 260px;
+    max-height: 400px;
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 0 0 8px 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    z-index: 100;
+}
+
+.editor-file-tree.show {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-tree-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #666);
+    background: var(--bg-secondary, #f8f9fa);
+}
+
+.file-tree-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--primary-color, #0078d4);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.file-tree-add:hover {
+    background: rgba(0,120,212,0.1);
+}
+
+.file-tree-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+/* Vertical tree style */
+.file-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 8px 7px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary, #333);
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+}
+
+.file-tree-item:hover {
+    background: var(--button-hover-bg, #f0f0f0);
+}
+
+.file-tree-item.active {
+    background: rgba(0,120,212,0.1);
+    border-left-color: var(--primary-color, #0078d4);
+    color: var(--primary-color, #0078d4);
+    font-weight: 500;
+}
+
+.file-tree-item.selected:not(.active) {
+    background: rgba(0,120,212,0.06);
+    border-left-color: rgba(0,120,212,0.45);
+}
+
+.file-tree-item.dragging {
+    opacity: 0.55;
+}
+
+.file-tree-item.drag-over {
+    background: rgba(0,120,212,0.12);
+    outline: 1px dashed rgba(0,120,212,0.45);
+    outline-offset: -1px;
+}
+
+.file-tree-item .file-icon {
+    font-size: 15px;
+    margin-right: 3px;
+}
+
+.file-tree-item .file-tree-expand {
+    font-size: 11px;
+    color: #666;
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 2px;
+    cursor: pointer;
+}
+
+.file-tree-item .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-tree-item .file-delete {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.file-tree-item:hover .file-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-tree-item .file-delete:hover {
+    background: rgba(255,0,0,0.1);
+    color: #f00;
+}
+
+.file-tree-item .folder-delete {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.file-tree-item:hover .folder-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-tree-item .folder-delete:hover {
+    background: rgba(255,0,0,0.1);
+    color: #f00;
+}
+
+.file-tree-item .file-rename,
+.file-tree-item .folder-rename {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1;
+    margin-right: 2px;
+    padding: 0;
+}
+
+.file-tree-item:hover .file-rename,
+.file-tree-item:hover .folder-rename {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-tree-item .file-rename:hover,
+.file-tree-item .folder-rename:hover {
+    background: rgba(255,255,255,0.2);
+    color: #333;
+}
+
+.file-tree-item .folder-add,
+.file-tree-item .folder-add-file {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    margin-right: 3px;
+    font-weight: 600;
+}
+
+.file-tree-item:hover .folder-add,
+.file-tree-item:hover .folder-add-file {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-tree-item .folder-add:hover,
+.file-tree-item .folder-add-file:hover {
+    background: rgba(0,120,212,0.15);
+    color: #0078d4;
+}
+
+.file-tree-add-folder {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-secondary, #666);
+}
+
+.file-tree-add-folder:hover {
+    background: var(--button-hover-bg, #f5f5f5);
+}
+
+.file-tree-actions {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.file-tree-export-all {
+    width: 100%;
+    padding: 6px 12px;
+    border: 1px solid var(--primary-color, #0078d4);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--primary-color, #0078d4);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+}
+
+.file-tree-export-all:hover {
+    background: var(--primary-color, #0078d4);
+    color: #fff;
+}
+
+body.dark-mode .editor-files-bar {
+    background: var(--bg-tertiary, #2d2d2d);
+    border-color: var(--border-color, #444);
+}
+
+body.dark-mode .editor-file-tab {
+    background: var(--bg-secondary, #333);
+    border-color: var(--border-color, #444);
+    color: var(--text-secondary, #aaa);
+}
+
+body.dark-mode .editor-new-file-btn {
+    border-color: #555;
+    color: #888;
+}
+
+body.dark-mode .editor-tree-toggle:hover {
+    background: #444;
+}
+
+body.dark-mode .editor-file-tree {
+    background: var(--bg-secondary, #252525);
+    border-color: #444;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+body.dark-mode .file-tree-header {
+    border-color: #444;
+    color: #aaa;
+    background: #2a2a2a;
+}
+
+body.dark-mode .file-tree-item {
+    color: #ddd;
+}
+
+body.dark-mode .file-tree-item:hover {
+    background: #3a3a3a;
+}
+
+body.dark-mode .file-tree-item.active {
+    background: rgba(0,120,212,0.25);
+    border-left-color: #4da6ff;
+}
+
+body.dark-mode .file-tree-item.selected:not(.active) {
+    background: rgba(77,166,255,0.14);
+    border-left-color: rgba(77,166,255,0.55);
+}
+
+body.dark-mode .file-tree-item.drag-over {
+    background: rgba(77,166,255,0.18);
+    outline-color: rgba(77,166,255,0.55);
+}
+
+body.dark-mode .file-tree-item .file-tree-expand {
+    color: #888;
+}
+
+body.dark-mode .file-tree-actions {
+    border-color: #444;
+}
+
+body.dark-mode .file-tree-item .file-rename:hover,
+body.dark-mode .file-tree-item .folder-rename:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* === Editor Main Area (Side-by-Side Split) === */
+.editor-main {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+}
+
+.editor-main textarea.codemirror-hidden {
+    display: none; /* Hide original textarea, CM takes over */
+}
+
+/* Style the CodeMirror wrapper */
+.editor-main .CodeMirror {
+    flex: 1 1 50%;
+    min-width: 50px;
+    height: 100%; /* Fill the container height */
+    border-right: 1px solid var(--border-color);
+}
+
+.editor-main .cm-s-material.CodeMirror,
+.editor-main .cm-s-material-darker.CodeMirror {
+    background-color: var(--custom-editor-bg) !important;
+}
+
+.editor-main .CodeMirror .CodeMirror-gutters {
+    background-color: var(--cm-gutter-bg) !important;
+    border-right: 1px solid var(--cm-gutter-border) !important;
+}
+
+.editor-main .CodeMirror .CodeMirror-gutter {
+    background-color: var(--cm-gutter-bg) !important;
+}
+
+.editor-main .CodeMirror .CodeMirror-gutter-background {
+    background-color: var(--cm-gutter-bg) !important;
+}
+
+/* === CodeMirror Gutter and Line Numbers Customization === */
+.editor-main .CodeMirror .CodeMirror-linenumber {
+    color: var(--cm-linenumber-color) !important;
+}
+
+#md-preview, .editor-main.preview #md-preview {
+    background-color: var(--custom-preview-bg) !important;
+    padding: var(--spacing-md);
+    overflow: auto;
+    color: var(--text-color);
+    flex: 1 1 50%;
+    min-width: 50px;
+}
+
+/* === Resizer Handle (Horizontal Split) === */
+.editor-resizer {
+    flex: 0 0 5px;
+    cursor: ew-resize;
+    background-color: var(--background-color);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.editor-resizer:hover, .editor-resizer.active {
+    background-color: var(--primary-hover);
+}
+
+.editor-resizer::after {
+    content: '...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-secondary);
+    font-size: 20px;
+    line-height: 0;
+    letter-spacing: 2px;
+}
+
+
+/* === View Modes === */
+/* Edit Only Mode */
+.editor-main.edit .CodeMirror { flex-basis: 100%; }
+.editor-main.edit .editor-resizer,
+.editor-main.edit .md-preview { display: none; }
+
+/* Preview Only Mode */
+.editor-main.preview .CodeMirror,
+.editor-main.preview .editor-resizer { display: none; }
+.editor-main.preview .md-preview { flex-basis: 100%; }
+
+/* Default Split Mode (Horizontal) */
+.editor-main.split .CodeMirror,
+.editor-main.split .editor-resizer,
+.editor-main.split .md-preview {
+    display: flex; /* Make them visible and participate in flex layout */
+}
+
+/* === Vertical Split Mode === */
+.editor-main.split-vertical {
+    flex-direction: column;
+}
+
+.editor-main.split-vertical .CodeMirror {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-main.split-vertical .editor-resizer {
+    cursor: ns-resize;
+    width: 100%;
+    height: 5px;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-main.split-vertical .editor-resizer::after {
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+
+
+/* === Status Bar === */
+.editor-status {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-secondary);
+    background-color: var(--background-color);
+    text-align: right;
+    height: 28px; /* Fixed height */
+    flex-shrink: 0;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.checkbox-group:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.checkbox-group input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-secondary);
+    user-select: none;
+}
+
+.checkbox-group input[type="checkbox"] {
+    cursor: pointer;
+    transform: scale(0.85);
+    margin-right: -4px;
+}
+
+#md-ai-custom-prompt-container {
+    gap: 4px;
+    align-items: center;
+}
+
+#md-ai-custom-prompt-input {
+    flex-grow: 1;
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+#md-ai-custom-prompt-submit {
+    background-color: var(--button-bg-color);
+    color: var(--button-text-color);
+    border: 1px solid var(--button-border-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#md-ai-custom-prompt-submit:hover {
+    background-color: var(--button-hover-bg-color);
+}
+
+/* ========== SuperDoc DOCX Editor Styles ========== */
+.superdoc-editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background-color);
+    overflow: auto;
+}
+
+.superdoc-toolbar {
+    width: 100%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 4px 8px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* SuperDoc 工具栏按钮激活状态 */
+#md-docx-toggle.active {
+    background-color: var(--button-hover-bg-color);
+    color: var(--accent-color);
+}
+
+/* ========== Univer Sheet Editor Styles ========== */
+.sheet-editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background-color);
+    overflow: hidden;
+}
+
+/* x-spreadsheet 容器 */
+.sheet-editor > .x-spreadsheet,
+.sheet-editor > div[data-name="x-spreadsheet"],
+.sheet-editor > div[class*="x-spreadsheet"] {
+    flex: 1;
+    overflow: auto;
+}
+
+.svg-toolbar {
+    width: 100%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 4px 8px;
+    box-sizing: border-box;
+}
+
+.svg-editor {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    border: none;
+    background: var(--background-color);
+}
+
+#md-svg-toggle.active {
+    background-color: var(--button-hover-bg-color);
+    color: var(--accent-color);
+}
+
+/* Sheet 工具栏按钮激活状态 */
+#md-sheet-toggle.active {
+    background-color: var(--button-hover-bg-color);
+    color: var(--accent-color);
+}

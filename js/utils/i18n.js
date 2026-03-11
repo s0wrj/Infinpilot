@@ -1,5 +1,5 @@
 /**
- * PageTalk - i18n Utilities
+ * InfinPilot - i18n Utilities
  * 统一提供获取当前翻译与格式化文本的方法
  */
 
@@ -43,4 +43,4 @@ export function tr(key, replacements = {}, translations) {
 // 导出到全局（可选，便于逐步迁移）
 if (typeof window !== 'undefined') {
   window.I18n = { getCurrentTranslations, tr };
-} 
+}

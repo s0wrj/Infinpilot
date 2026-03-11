@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Diagram Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        #container { width: 100%; height: 100%; display: flex; flex-direction: column; background: #f5f5f5; }
+        #toolbar { height: 44px; background: #fff; border-bottom: 1px solid #ddd; display: flex; align-items: center; padding: 0 12px; gap: 8px; }
+        .toolbar-btn { padding: 6px 12px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .toolbar-btn:hover { background: #f0f0f0; }
+        .toolbar-btn.active { background: #e3f2fd; border-color: #2196f3; color: #2196f3; }
+        .toolbar-separator { width: 1px; height: 24px; background: #ddd; margin: 0 4px; }
+        #canvas-container { flex: 1; overflow: hidden; position: relative; }
+        #canvas { width: 100%; height: 100%; cursor: default; }
+        #canvas.panning { cursor: grabbing; }
+        #canvas.selecting { cursor: crosshair; }
+        .shape { cursor: move; }
+        .shape.selected { outline: 2px solid #2196f3; outline-offset: 2px; }
+        #status { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        #help { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 4px; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .shape-rect { fill: #fff; stroke: #333; stroke-width: 1; }
+        .shape-ellipse { fill: #fff; stroke: #333; stroke-width: 1; }
+        .shape-rhombus { fill: #fff; stroke: #333; stroke-width: 1; }
+        .shape-cylinder { fill: #fff; stroke: #333; stroke-width: 1; }
+        .connector { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+        .shape-text { font-size: 14px; fill: #333; text-anchor: middle; dominant-baseline: middle; }
+        .shape.selected .shape-rect,
+        .shape.selected .shape-ellipse,
+        .shape.selected .shape-rhombus,
+        .shape.selected .shape-cylinder { stroke: #2196f3; stroke-width: 2; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="toolbar">
+            <button class="toolbar-btn" onclick="setTool('select')" id="btn-select">选择</button>
+            <button class="toolbar-btn" onclick="setTool('rect')" id="btn-rect">矩形</button>
+            <button class="toolbar-btn" onclick="setTool('ellipse')" id="btn-ellipse">椭圆</button>
+            <button class="toolbar-btn" onclick="setTool('diamond')" id="btn-diamond">菱形</button>
+            <button class="toolbar-btn" onclick="setTool('text')" id="btn-text">文本</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn" onclick="addConnector()">连接线</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn" onclick="deleteSelected()">删除</button>
+            <button class="toolbar-btn" onclick="clearCanvas()">清空</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn" onclick="exportXML()">导出XML</button>
+            <button class="toolbar-btn" onclick="document.getElementById('import-input').click()">导入XML</button>
+            <input type="file" id="import-input" accept=".xml,.drawio" style="display:none" onchange="importXML(event)">
+        </div>
+        <div id="canvas-container">
+            <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+                    </marker>
+                </defs>
+                <g id="shapes-layer"></g>
+                <g id="connectors-layer"></g>
+            </svg>
+            <div id="help">拖拽: 移动 | 滚轮: 缩放 | 双击: 编辑文字</div>
+            <div id="status">就绪</div>
+        </div>
+    </div>
+    <script>
+        let currentTool = 'select';
+        let shapes = [];
+        let connectors = [];
+        let selectedShape = null;
+        let isDragging = false;
+        let isPanning = false;
+        let dragStart = { x: 0, y: 0 };
+        let panOffset = { x: 0, y: 0 };
+        let zoom = 1;
+        let shapeIdCounter = 1;
+        let isCreating = false;
+        let newShapeStart = null;
+
+        const canvas = document.getElementById('canvas');
+        const shapesLayer = document.getElementById('shapes-layer');
+        const connectorsLayer = document.getElementById('connectors-layer');
+        const status = document.getElementById('status');
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+            const btn = document.getElementById('btn-' + tool);
+            if (btn) btn.classList.add('active');
+            canvas.className = tool === 'select' ? '' : 'selecting';
+            updateStatus('当前工具: ' + tool);
+        }
+
+        function createShape(type, x, y, width, height, text) {
+            text = text || '';
+            const shape = {
+                id: 'shape-' + (shapeIdCounter++),
+                type: type,
+                x: x,
+                y: y,
+                width: width || 100,
+                height: height || 60,
+                text: text
+            };
+            shapes.push(shape);
+            renderShape(shape);
+            return shape;
+        }
+
+        function renderShape(shape) {
+            let el;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('id', shape.id);
+            g.setAttribute('class', 'shape');
+            g.setAttribute('transform', 'translate(' + shape.x + ', ' + shape.y + ')');
+
+            switch(shape.type) {
+                case 'rect':
+                    el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    el.setAttribute('width', shape.width);
+                    el.setAttribute('height', shape.height);
+                    el.setAttribute('rx', 4);
+                    el.setAttribute('class', 'shape-rect');
+                    break;
+                case 'ellipse':
+                    el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                    el.setAttribute('cx', shape.width / 2);
+                    el.setAttribute('cy', shape.height / 2);
+                    el.setAttribute('rx', shape.width / 2);
+                    el.setAttribute('ry', shape.height / 2);
+                    el.setAttribute('class', 'shape-ellipse');
+                    break;
+                case 'diamond':
+                    const points = shape.width/2 + ',0 ' + shape.width + ',' + shape.height/2 + ' ' + shape.width/2 + ',' + shape.height + ' 0,' + shape.height/2;
+                    el = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    el.setAttribute('points', points);
+                    el.setAttribute('class', 'shape-rhombus');
+                    break;
+                case 'cylinder':
+                    el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const hw = shape.width / 2;
+                    const hh = shape.height / 2;
+                    const ry = Math.min(hh * 0.3, 15);
+                    el.setAttribute('d', 'M0,' + ry + ' A' + hw + ',' + ry + ' 0 0,1 ' + shape.width + ',' + ry + ' L' + shape.width + ',' + (shape.height - ry) + ' A' + hw + ',' + ry + ' 0 0,1 0,' + (shape.height - ry) + ' Z');
+                    el.setAttribute('class', 'shape-cylinder');
+                    break;
+                case 'text':
+                    el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    el.setAttribute('x', shape.width / 2);
+                    el.setAttribute('y', shape.height / 2);
+                    el.setAttribute('class', 'shape-text');
+                    el.textContent = shape.text || '双击编辑';
+                    break;
+            }
+
+            if (el) g.appendChild(el);
+
+            if (shape.text && shape.type !== 'text') {
+                const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textEl.setAttribute('x', shape.width / 2);
+                textEl.setAttribute('y', shape.height / 2);
+                textEl.setAttribute('class', 'shape-text');
+                textEl.textContent = shape.text;
+                g.appendChild(textEl);
+            }
+
+            g.addEventListener('mousedown', function(e) { handleShapeMouseDown(e, shape); });
+            g.addEventListener('dblclick', function(e) { handleShapeDoubleClick(e, shape); });
+
+            shapesLayer.appendChild(g);
+        }
+
+        function handleShapeMouseDown(e, shape) {
+            if (currentTool !== 'select') return;
+            e.stopPropagation();
+            selectShape(shape);
+            isDragging = true;
+            dragStart = { x: e.clientX - shape.x, y: e.clientY - shape.y };
+        }
+
+        function handleShapeDoubleClick(e, shape) {
+            const newText = prompt('请输入文字:', shape.text || '');
+            if (newText !== null) {
+                shape.text = newText;
+                refreshCanvas();
+            }
+        }
+
+        function handleCanvasMouseDown(e) {
+            if (currentTool === 'select') {
+                isPanning = true;
+                dragStart = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+                canvas.classList.add('panning');
+            } else if (currentTool !== 'text') {
+                isCreating = true;
+                newShapeStart = getCanvasPoint(e);
+            }
+        }
+
+        function handleCanvasMouseMove(e) {
+            if (isDragging && selectedShape) {
+                const pt = getCanvasPoint(e);
+                selectedShape.x = pt.x - dragStart.x;
+                selectedShape.y = pt.y - dragStart.y;
+                updateShapePosition(selectedShape);
+                updateStatus('位置: ' + Math.round(selectedShape.x) + ', ' + Math.round(selectedShape.y));
+            } else if (isPanning) {
+                panOffset.x = e.clientX - dragStart.x;
+                panOffset.y = e.clientY - dragStart.y;
+                updateTransform();
+            }
+        }
+
+        function handleCanvasMouseUp(e) {
+            if (isCreating && newShapeStart) {
+                const pt = getCanvasPoint(e);
+                const width = Math.abs(pt.x - newShapeStart.x);
+                const height = Math.abs(pt.y - newShapeStart.y);
+
+                if (width > 10 && height > 10) {
+                    const x = Math.min(newShapeStart.x, pt.x);
+                    const y = Math.min(newShapeStart.y, pt.y);
+                    createShape(currentTool, x, y, width, height);
+                    updateStatus('已创建 ' + currentTool);
+                }
+            }
+
+            isDragging = false;
+            isPanning = false;
+            isCreating = false;
+            newShapeStart = null;
+            canvas.classList.remove('panning');
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= delta;
+            zoom = Math.max(0.1, Math.min(5, zoom));
+            updateTransform();
+            updateStatus('缩放: ' + Math.round(zoom * 100) + '%');
+        }
+
+        function getCanvasPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left - panOffset.x) / zoom,
+                y: (e.clientY - rect.top - panOffset.y) / zoom
+            };
+        }
+
+        function updateTransform() {
+            shapesLayer.setAttribute('transform', 'translate(' + panOffset.x + ', ' + panOffset.y + ') scale(' + zoom + ')');
+            connectorsLayer.setAttribute('transform', 'translate(' + panOffset.x + ', ' + panOffset.y + ') scale(' + zoom + ')');
+        }
+
+        function updateShapePosition(shape) {
+            const g = document.getElementById(shape.id);
+            if (g) {
+                g.setAttribute('transform', 'translate(' + shape.x + ', ' + shape.y + ')');
+            }
+        }
+
+        function selectShape(shape) {
+            if (selectedShape) {
+                const prev = document.getElementById(selectedShape.id);
+                if (prev) prev.classList.remove('selected');
+            }
+            selectedShape = shape;
+            if (shape) {
+                const el = document.getElementById(shape.id);
+                if (el) el.classList.add('selected');
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedShape) {
+                const el = document.getElementById(selectedShape.id);
+                if (el) el.remove();
+                shapes = shapes.filter(function(s) { return s.id !== selectedShape.id; });
+                selectedShape = null;
+                updateStatus('已删除');
+            }
+        }
+
+        function clearCanvas() {
+            if (confirm('确定清空所有内容?')) {
+                shapes = [];
+                connectors = [];
+                shapesLayer.innerHTML = '';
+                connectorsLayer.innerHTML = '';
+                updateStatus('已清空');
+            }
+        }
+
+        function updateStatus(msg) {
+            status.textContent = msg;
+        }
+
+        function addConnector() {
+            if (!selectedShape) {
+                alert('请先选择一个图形作为起点');
+                return;
+            }
+            const startShape = selectedShape;
+            const endX = startShape.x + startShape.width + 100;
+            const endY = startShape.y + startShape.height / 2;
+
+            const connector = {
+                id: 'connector-' + (shapeIdCounter++),
+                sourceId: startShape.id,
+                points: [
+                    { x: startShape.x + startShape.width, y: startShape.y + startShape.height / 2 },
+                    { x: endX, y: endY }
+                ]
+            };
+            connectors.push(connector);
+            renderConnector(connector);
+            updateStatus('已添加连接线');
+        }
+
+        function renderConnector(connector) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = connector.points.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p.x + ',' + p.y; }).join(' ');
+            path.setAttribute('d', d);
+            path.setAttribute('class', 'connector');
+            path.setAttribute('id', connector.id);
+            connectorsLayer.appendChild(path);
+        }
+
+        function exportXML() {
+            const xml = generateDrawIOML();
+            const blob = new Blob([xml], { type: 'text/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'diagram.drawio';
+            a.click();
+            URL.revokeObjectURL(url);
+            updateStatus('已导出XML');
+        }
+
+        function generateDrawIOML() {
+            var xml = '<mxfile host="app.diagrams.net"><diagram id="' + Date.now() + '" name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>';
+
+            shapes.forEach(function(shape, idx) {
+                var cellId = idx + 2;
+                var style = 'whiteSpace=wrap;html=1;';
+                if (shape.type === 'rect') style += 'rounded=1;';
+                if (shape.type === 'ellipse') style += 'ellipse;';
+                if (shape.type === 'diamond') style += 'rhombus;';
+                if (shape.type === 'cylinder') style += 'shape=cylinder;';
+
+                xml += '<mxCell id="' + cellId + '" value="' + escapeXml(shape.text || '') + '" style="' + style + '" vertex="1" parent="1">' +
+                    '<mxGeometry x="' + shape.x + '" y="' + shape.y + '" width="' + shape.width + '" height="' + shape.height + '" as="geometry"/>' +
+                    '</mxCell>';
+            });
+
+            xml += '</root></mxGraphModel></diagram></mxfile>';
+            return xml;
+        }
+
+        function escapeXml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function importXML(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                parseDrawIOML(e.target.result);
+                updateStatus('已导入XML');
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function parseDrawIOML(xmlStr) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(xmlStr, 'text/xml');
+
+            shapes = [];
+            shapesLayer.innerHTML = '';
+
+            var cells = doc.querySelectorAll('mxCell[vertex="1"]');
+            cells.forEach(function(cell) {
+                var value = cell.getAttribute('value') || '';
+                var style = cell.getAttribute('style') || '';
+                var geo = cell.querySelector('mxGeometry');
+                if (!geo) return;
+
+                var x = parseFloat(geo.getAttribute('x')) || 0;
+                var y = parseFloat(geo.getAttribute('y')) || 0;
+                var w = parseFloat(geo.getAttribute('width')) || 100;
+                var h = parseFloat(geo.getAttribute('height')) || 60;
+
+                var type = 'rect';
+                if (style.indexOf('ellipse') !== -1) type = 'ellipse';
+                else if (style.indexOf('rhombus') !== -1 || style.indexOf('diamond') !== -1) type = 'diamond';
+                else if (style.indexOf('cylinder') !== -1) type = 'cylinder';
+
+                createShape(type, x, y, w, h, value);
+            });
+        }
+
+        function refreshCanvas() {
+            shapesLayer.innerHTML = '';
+            shapes.forEach(renderShape);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                deleteSelected();
+            } else if (e.key === 'Escape') {
+                setTool('select');
+                selectShape(null);
+            }
+        });
+
+        canvas.addEventListener('mousedown', handleCanvasMouseDown);
+        canvas.addEventListener('mousemove', handleCanvasMouseMove);
+        canvas.addEventListener('mouseup', handleCanvasMouseUp);
+        canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+        // Create sample diagram
+        createShape('rect', 50, 100, 120, 60, '开始');
+        createShape('diamond', 250, 100, 100, 80, '判断?');
+        createShape('rect', 420, 100, 120, 60, '处理');
+        createShape('ellipse', 250, 250, 100, 60, '结束');
+
+        updateStatus('就绪 - 滚轮缩放，拖拽移动');
+    </script>
+</body>
+</html>

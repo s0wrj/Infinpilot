@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Dynamic Content Rendering (Markdown, KaTeX, Mermaid)
+ * Infinpilot - Dynamic Content Rendering (Markdown, KaTeX, Mermaid)
  */
 
 import { escapeHtml } from './utils.js';
@@ -18,67 +18,64 @@ export function renderDynamicContent(element, elements) {
         try {
             window.renderMathInElement(element, {
                 delimiters: [
-                    {left: "$$", right: "$$", display: true},
-                    {left: "\\[", right: "\\]", display: true},
+                    {left: "$", right: "$", display: true},
+                    {left: "[", right: "]", display: true},
                     {left: "$", right: "$", display: false},
                     {left: "\\(", right: "\\)", display: false}
                 ],
-                throwOnError: false // Don't stop rendering on single error
+                throwOnError: false
             });
         } catch (error) {
             console.error('KaTeX rendering error:', error);
         }
-    } else {
-        // console.warn('KaTeX renderMathInElement function not found.');
     }
 
-    // --- Render Mermaid (Manual Iteration) ---
+    // --- Render Mermaid ---
     if (typeof mermaid !== 'undefined') {
-        const mermaidPreElements = element.querySelectorAll('pre.mermaid');
-        if (mermaidPreElements.length > 0) {
-            console.log(`Found ${mermaidPreElements.length} Mermaid <pre> elements to render.`);
-            mermaidPreElements.forEach(async (preElement, index) => {
-                const definition = preElement.textContent || '';
-                if (!definition.trim()) {
-                    console.warn(`Skipping empty Mermaid <pre> element at index ${index}.`);
-                    return; // Skip empty definitions
-                }
+        // Use a more robust rendering method that avoids race conditions
+        const mermaidElements = element.querySelectorAll('pre.mermaid');
+        if (mermaidElements.length > 0) {
+            // Use Promise.all to handle all renderings concurrently
+            Promise.all(Array.from(mermaidElements).map(async (pre, index) => {
+                // Check if this element has already been processed by this new method
+                if (pre.dataset.mermaidRendered === 'true') return;
 
-                const renderId = `mermaid-render-${Date.now()}-${index}`;
-                const container = document.createElement('div');
-                container.className = 'mermaid';
-                container.id = `${renderId}-container`;
-                container.dataset.mermaidDefinition = definition;
+                const definition = pre.textContent || '';
+                if (!definition) return;
 
-                if (preElement.parentNode) {
-                    preElement.parentNode.replaceChild(container, preElement);
-                } else {
-                    console.error('Cannot replace Mermaid <pre> element: parentNode is null.');
-                    return;
-                }
-
+                const renderId = `mermaid-dynamic-${Date.now()}-${index}`;
+                
                 try {
+                    // Use the modern, promise-based render function
                     const { svg } = await mermaid.render(renderId, definition);
+                    
+                    // Create a new container for the SVG to ensure consistent structure
+                    const container = document.createElement('div');
                     container.innerHTML = svg;
-                    console.log(`Successfully rendered Mermaid chart ${index + 1} into container ${container.id}.`);
-
-                    // Add click listener to the container (or SVG) to open modal
+                    container.style.cursor = 'pointer';
+                    
+                    // Add the click listener directly to the new container
                     container.addEventListener('click', (event) => {
-                        const svgElement = container.querySelector('svg');
-                        if (svgElement) {
-                            event.stopPropagation(); // Prevent potential parent listeners
-                            showMermaidModal(svgElement.outerHTML, elements);
-                        }
+                        event.stopPropagation();
+                        showMermaidModal(container.innerHTML, elements);
                     });
 
+                    // Replace the original <pre> tag with our new, clickable container
+                    if (pre.parentNode) {
+                        pre.parentNode.replaceChild(container, pre);
+                    }
+
                 } catch (error) {
-                    console.error(`Error rendering Mermaid chart ${index + 1} (ID: ${renderId}):`, error, 'Definition:', definition);
-                    container.innerHTML = `<div class="mermaid-error">Mermaid Render Error: ${escapeHtml(error.message)}</div>`;
+                    console.error(`Error rendering Mermaid chart:`, error, 'Definition:', definition);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'mermaid-error';
+                    errorDiv.innerHTML = `Render Error: ${escapeHtml(error.message)}`;
+                    if (pre.parentNode) {
+                        pre.parentNode.replaceChild(errorDiv, pre);
+                    }
                 }
-            });
+            }));
         }
-    } else {
-        // console.warn('Mermaid library not found during renderDynamicContent.');
     }
 }
 

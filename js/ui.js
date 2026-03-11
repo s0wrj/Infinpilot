@@ -1,5 +1,5 @@
 /**
- * Pagetalk - UI Update and DOM Manipulation Functions
+ * Infinpilot - UI Update and DOM Manipulation Functions
  */
 import { generateUniqueId, escapeHtml } from './utils.js';
 import { renderDynamicContent } from './render.js';
@@ -58,19 +58,134 @@ export function switchSettingsSubTab(subTabId, elements) {
  * @param {boolean} isUserNearBottom - Whether user is scrolled near bottom
  * @returns {HTMLElement} 创建的消息元素
  */
+function createCitationsFooter(citations, currentTranslations) {
+    if (!citations || citations.length === 0) {
+        return '';
+    }
+
+    const citationsForUi = citations.map((c, idx) => ({
+        index: idx + 1,
+        text: c.text,
+        source: c.source || ''
+    }));
+
+    const citationListHtml = citationsForUi.map(c => {
+        const safeText = escapeHtml(c.text || '');
+        const safeSource = c.source ? escapeHtml(c.source) : '';
+        let item = `[#${c.index}] ${safeText}`;
+        if (c.source) {
+            item += ` <span class="rag-citation-source">— ${safeSource}</span>`;
+        }
+        return `<li>${item}</li>`;
+    }).join('');
+
+    const extraFooterHtml = `<div class="rag-citations-header">${_('citationsHeader', {}, currentTranslations)}</div><ol class="rag-citation-list">${citationListHtml}</ol>`;
+
+    const headerLabel = _('citationsToggle', { count: citationsForUi.length }, currentTranslations);
+    return `
+        <div class="rag-citations-block">
+            <button class="rag-toggle" type="button" aria-expanded="false" title="${_('toggleCitations', {}, currentTranslations)}">${headerLabel}</button>
+            <div class="rag-citations" style="display: none;">${extraFooterHtml}</div>
+        </div>
+    `;
+}
+
+/**
+ * Binds the click event to the citation toggle button within a message element.
+ * @param {HTMLElement} messageElement - The message element containing the citation block.
+ */
+function bindCitationToggle(messageElement) {
+    try {
+        const toggleBtn = messageElement.querySelector('.rag-toggle');
+        const citationsEl = messageElement.querySelector('.rag-citations');
+        if (toggleBtn && citationsEl) {
+            toggleBtn.addEventListener('click', () => {
+                const isOpen = citationsEl.style.display !== 'none';
+                citationsEl.style.display = isOpen ? 'none' : 'block';
+                toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+            });
+        }
+    } catch (e) {
+        console.warn('[UI] Failed to bind rag toggle:', e);
+    }
+}
+
+function createToolCallResultCardFromHistory(toolResultData, currentTranslations) {
+    const { tool_call, result, error } = toolResultData;
+    const toolName = tool_call.name;
+    const toolArgs = tool_call.args;
+    const isError = !!error;
+
+    const card = document.createElement('div');
+    card.className = `tool-call-card ${isError ? 'error' : 'success'}`;
+
+    const resultString = JSON.stringify(isError ? String(error) : result, null, 2);
+    const statusIcon = isError
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+
+    card.innerHTML = `
+        <div class="tool-card-header">
+            <div class="tool-card-title">
+                <span class="tool-card-status-icon ${isError ? 'error' : 'success'}">${statusIcon}</span>
+                <span>${isError ? (_('toolError', {}, currentTranslations) || 'Error') : (_('toolResult', {}, currentTranslations) || 'Tool Result')}: <strong>${escapeHtml(toolName)}</strong></span>
+            </div>
+            <div class="tool-card-actions">
+                 <button class="tool-action-btn copy-result-btn" title="${_('copyResult', {}, currentTranslations) || 'Copy Result'}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="tool-action-btn toggle-result-btn" title="${_('expandResult', {}, currentTranslations) || 'Expand Result'}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="tool-card-body collapsed">
+            <pre class="tool-card-args">${escapeHtml(JSON.stringify(toolArgs || {}, null, 2))}</pre>
+            <div class="tool-card-result-container" style="display: block;">
+                 <pre class="tool-card-result">${escapeHtml(resultString)}</pre>
+            </div>
+        </div>
+    `;
+
+    card.querySelector('.copy-result-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(resultString);
+    });
+
+    const toggleBtn = card.querySelector('.toggle-result-btn');
+    const cardBody = card.querySelector('.tool-card-body');
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCollapsed = cardBody.classList.toggle('collapsed');
+        toggleBtn.title = isCollapsed ? (_('expandResult', {}, currentTranslations) || 'Expand Result') : (_('collapseResult', {}, currentTranslations) || 'Collapse Result');
+        toggleBtn.querySelector('svg').style.transform = isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    return card;
+}
+
 export function addMessageToChat(content, sender, options = {}, state, elements, currentTranslations, addCopyButtonToCodeBlock, addMessageActionButtons, isUserNearBottom) {
-    const { isStreaming = false, images = [], videos = [], insertAfterElement = null, forceScroll = false, sentContextTabs = [] } = options;
+    const { isStreaming = false, images = [], videos = [], insertAfterElement = null, forceScroll = false, sentContextTabs = [], citations = null, tool_results = null, renderedMode = '' } = options;
+
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('message-container', `${sender}-container`);
+    const messageId = (options && options.id) ? options.id : generateUniqueId();
+    messageContainer.dataset.messageId = messageId;
+
+    const headerElement = createAvatarElement(sender, state);
+    messageContainer.appendChild(headerElement);
     
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
-    
-    const messageId = (options && options.id) ? options.id : generateUniqueId();
     messageDiv.dataset.messageId = messageId;
+    if (renderedMode) {
+        messageContainer.classList.add(`${renderedMode}-rendered`, 'mode-rendered');
+        messageDiv.classList.add(`${renderedMode}-rendered-message`, 'mode-rendered-message');
+    }
 
     // --- 新增：处理已发送的上下文标签页 (在用户消息之前显示) ---
-    let sentTabsContainer = null;
     if (sender === 'user' && sentContextTabs && sentContextTabs.length > 0) {
-        sentTabsContainer = document.createElement('div');
+        const sentTabsContainer = document.createElement('div');
         sentTabsContainer.className = 'sent-tabs-container';
         // 关键：将 sentTabsContainer 与它下方的 messageDiv 关联起来
         sentTabsContainer.dataset.messageIdRef = messageId;
@@ -122,13 +237,13 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
 
             sentTabsContainer.appendChild(tabItem);
         });
+        messageDiv.appendChild(sentTabsContainer);
     }
     // --- 结束：处理已发送的上下文标签页 ---
 
     // --- 新增：处理已发送的图片 (在用户消息之前显示) ---
-    let sentImagesContainer = null;
     if (sender === 'user' && images.length > 0) {
-        sentImagesContainer = document.createElement('div');
+        const sentImagesContainer = document.createElement('div');
         sentImagesContainer.className = 'sent-images-container'; // 新样式类
         sentImagesContainer.dataset.messageIdRef = messageId;
 
@@ -146,6 +261,7 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
                 showFullSizeImage(img.dataset.url, elements);
             });
         });
+        messageDiv.appendChild(sentImagesContainer);
     }
     // --- 结束：处理已发送的图片 ---
 
@@ -156,19 +272,13 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
         actualInsertBeforeElement = insertAfterElement.nextSibling;
     }
 
-    // 依次插入外部容器
-    if (sentTabsContainer) {
-        parentNode.insertBefore(sentTabsContainer, actualInsertBeforeElement);
-    }
-    if (sentImagesContainer) {
-        parentNode.insertBefore(sentImagesContainer, actualInsertBeforeElement);
-    }
+    messageContainer.appendChild(messageDiv);
     
     // 然后插入消息气泡
     if (actualInsertBeforeElement) {
-        parentNode.insertBefore(messageDiv, actualInsertBeforeElement);
+        parentNode.insertBefore(messageContainer, actualInsertBeforeElement);
     } else {
-        parentNode.appendChild(messageDiv);
+        parentNode.appendChild(messageContainer);
     }
 
     if (isStreaming) {
@@ -226,12 +336,63 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
         messageHTML += '</div>';
     }
 
-    if (content) {
-        // Use MarkdownRenderer (assuming it's globally available or passed in)
-        messageHTML += window.MarkdownRenderer.render(content);
+    // --- NEW: Interleaved history rendering ---
+    if (sender === 'bot' && content && content.includes('<tool_result')) {
+        const toolResultPlaceholderRegex = /\n?<tool_result index="(\d+)"><\/tool_result>\n?/g;
+        const parts = content.split(toolResultPlaceholderRegex);
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (i % 2 === 1) { // This is a tool result index
+                const toolResult = options.tool_results[parseInt(part, 10)];
+                if (toolResult) {
+                    const card = createToolCallResultCardFromHistory(toolResult, currentTranslations);
+                    messageDiv.appendChild(card);
+                }
+            } else if (part.trim()) { // This is a text part
+                const textWrapper = document.createElement('div');
+                textWrapper.className = 'message-content'; // Use the same class for styling
+                textWrapper.innerHTML = window.MarkdownRenderer.render(part);
+                messageDiv.appendChild(textWrapper);
+            }
+        }
+    } else if (content !== undefined && content !== null) {
+        // Fallback for old history format or non-bot messages without tools
+        // Also handles empty string case - always create message-content element
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'message-content';
+        contentWrapper.innerHTML = typeof content === 'string' ? (content ? window.MarkdownRenderer.render(content) : '') : '';
+        messageDiv.appendChild(contentWrapper);
+        // Render tool results separately for old format
+        if (sender === 'bot' && tool_results && Array.isArray(tool_results)) {
+            for (const toolResultData of tool_results) {
+                const resultCard = createToolCallResultCardFromHistory(toolResultData, currentTranslations);
+                messageDiv.appendChild(resultCard);
+            }
+        }
+    } else if (sender === 'bot' && tool_results && Array.isArray(tool_results)) {
+        // Handle cases where there is no text content, only tools
+        for (const toolResultData of tool_results) {
+            const resultCard = createToolCallResultCardFromHistory(toolResultData, currentTranslations);
+            messageDiv.appendChild(resultCard);
+        }
     }
 
-    messageDiv.innerHTML = messageHTML;
+    if (sender === 'bot' && citations) {
+        // Append citations footer to the message bubble
+        try {
+            const citationsHtml = createCitationsFooter(citations, currentTranslations);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = citationsHtml;
+            const citationsElement = tempDiv.firstElementChild;
+            if (citationsElement) {
+                messageDiv.appendChild(citationsElement);
+            }
+        } catch (err) {
+            console.warn('[UI] Failed to render citations footer:', err);
+        }
+    }
+    // --- END MODIFICATION ---
 
     // 如果用户消息气泡中既没有文本也没有视频，则将其标记为空
     if (sender === 'user' && !content && videos.length === 0) {
@@ -264,6 +425,8 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
 
     renderDynamicContent(messageDiv, elements); // Render KaTeX/Mermaid
 
+    bindCitationToggle(messageDiv); // Bind toggle event for citations
+
     // Scroll only if forced or user is near bottom
     if (forceScroll || isUserNearBottom) {
         setTimeout(() => {
@@ -286,23 +449,28 @@ export function addMessageToChat(content, sender, options = {}, state, elements,
  * @param {object} elements - DOM elements reference
  */
 export function updateStreamingMessage(messageElement, content, shouldScroll, elements) {
-    let formattedContent = window.MarkdownRenderer.render(content);
+    // Find an existing streaming text part
+    let streamingTextPart = messageElement.querySelector('.streaming-text-part');
 
-    const streamingCursor = document.createElement('span');
-    streamingCursor.className = 'streaming-cursor';
-
-    const messageActions = messageElement.querySelector('.message-actions');
-    messageElement.innerHTML = formattedContent;
-    if (messageActions) {
-        messageElement.appendChild(messageActions);
+    // If a streaming part doesn't exist, create a new one and append it.
+    // This ensures that after a tool card is rendered, a new text block starts.
+    if (!streamingTextPart) {
+        streamingTextPart = document.createElement('div');
+        streamingTextPart.className = 'streaming-text-part';
+        messageElement.appendChild(streamingTextPart);
     }
 
-    // Temporarily disable dynamic rendering during streaming to avoid errors/performance issues
-    // renderDynamicContent(messageElement, elements);
+    // Render the current buffer for this text part.
+    // This will still have the "refresh" effect for the current text block,
+    // but it will be a new block after any tool calls.
+    streamingTextPart.innerHTML = window.MarkdownRenderer.render(content);
 
-    messageElement.appendChild(streamingCursor);
+    // Add the blinking cursor
+    const streamingCursor = document.createElement('span');
+    streamingCursor.className = 'streaming-cursor';
+    streamingTextPart.appendChild(streamingCursor);
 
-    if (shouldScroll) { // 使用 shouldScroll 决策
+    if (shouldScroll) {
         setTimeout(() => {
             elements.chatMessages.scrollTo({
                 top: elements.chatMessages.scrollHeight,
@@ -322,22 +490,45 @@ export function updateStreamingMessage(messageElement, content, shouldScroll, el
  * @param {boolean} shouldScroll - Whether to scroll to bottom
  * @param {object} elements - DOM elements reference
  */
-export function finalizeBotMessage(messageElement, finalContent, addCopyButtonToCodeBlock, addMessageActionButtons, restoreSendButtonAndInput, shouldScroll, elements) {
-    const streamingCursor = messageElement.querySelector('.streaming-cursor');
-    if (streamingCursor) {
-        streamingCursor.remove();
+export function finalizeBotMessage(messageElement, finalContent, addCopyButtonToCodeBlock, addMessageActionButtons, restoreSendButtonAndInput, shouldScroll, elements, citations = null) {
+    // Find the last streaming part and finalize it.
+    const streamingTextPart = messageElement.querySelector('.streaming-text-part');
+    if (streamingTextPart) {
+        // The content is already up-to-date from the last streaming update.
+        // We just need to remove the cursor and the streaming class.
+        const streamingCursor = streamingTextPart.querySelector('.streaming-cursor');
+        if (streamingCursor) {
+            streamingCursor.remove();
+        }
+        // The content of this part is now final.
+        streamingTextPart.classList.remove('streaming-text-part');
     }
 
-    messageElement.innerHTML = window.MarkdownRenderer.render(finalContent);
+    // Add citations block at the end of the whole message if they exist
+    if (citations) {
+        const citationsHtml = createCitationsFooter(citations, elements.currentTranslations);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = citationsHtml;
+        const citationsElement = tempDiv.firstElementChild;
+        if (citationsElement) {
+            messageElement.appendChild(citationsElement);
+        }
+    }
 
+    // Process all code blocks in the entire message to add copy buttons
     const codeBlocks = messageElement.querySelectorAll('.code-block');
     codeBlocks.forEach(addCopyButtonToCodeBlock);
 
+    // Add action buttons to the message bubble itself
     addMessageActionButtons(messageElement, finalContent);
 
-    renderDynamicContent(messageElement, elements); // Final render
+    // Render dynamic content like KaTeX and Mermaid for the whole message
+    renderDynamicContent(messageElement, elements);
+    
+    // Bind all citation toggles in the message
+    bindCitationToggle(messageElement);
 
-    if (shouldScroll) { // 使用 shouldScroll 决策
+    if (shouldScroll) {
         setTimeout(() => {
             elements.chatMessages.scrollTo({
                 top: elements.chatMessages.scrollHeight,
@@ -356,25 +547,41 @@ export function finalizeBotMessage(messageElement, finalContent, addCopyButtonTo
  * @param {boolean} isUserNearBottom - Whether user is scrolled near bottom
  * @returns {HTMLElement} The thinking animation element
  */
-export function addThinkingAnimation(insertAfterElement = null, elements, isUserNearBottom) {
-    const thinkingElement = document.createElement('div');
-    thinkingElement.classList.add('message', 'bot-message', 'thinking');
-
+export function addThinkingAnimation(targetElement = null, elements, isUserNearBottom) {
     const thinkingDots = document.createElement('div');
     thinkingDots.classList.add('thinking-dots');
     for (let i = 0; i < 3; i++) {
         const dot = document.createElement('span');
         thinkingDots.appendChild(dot);
     }
+
+    // If the target is a message bubble, reuse it.
+    if (targetElement && targetElement.classList.contains('message')) {
+        targetElement.innerHTML = ''; // Clear existing content
+        targetElement.classList.add('thinking');
+        targetElement.appendChild(thinkingDots);
+        
+        if (isUserNearBottom) {
+            setTimeout(() => {
+                elements.chatMessages.scrollTo({ top: elements.chatMessages.scrollHeight, behavior: 'smooth' });
+            }, 50);
+        }
+        return targetElement; // Return the reused element
+    }
+
+    // Otherwise, create a new thinking bubble and insert it after the target.
+    const thinkingElement = document.createElement('div');
+    thinkingElement.classList.add('message', 'bot-message', 'thinking');
     thinkingElement.appendChild(thinkingDots);
 
+    // The original logic used insertAfterElement, so we maintain that behavior for the new bubble.
+    const insertAfterElement = targetElement;
     if (insertAfterElement && insertAfterElement.parentNode === elements.chatMessages) {
         insertAfterElement.insertAdjacentElement('afterend', thinkingElement);
     } else {
         elements.chatMessages.appendChild(thinkingElement);
     }
 
-    // 仅当用户在底部时才滚动，以避免覆盖用户的向上滚动操作
     if (isUserNearBottom) {
         setTimeout(() => {
             elements.chatMessages.scrollTo({
@@ -512,6 +719,99 @@ export function setupAutoresizeTextarea(elements) {
     textarea.addEventListener('input', () => resizeTextarea(elements));
     textarea.addEventListener('paste', () => setTimeout(() => resizeTextarea(elements), 0)); // Handle paste
 
+    // Add button listeners here where elements are in scope
+    // 使用全局变量存储按钮引用，确保在事件处理器中可以访问
+    window.__automationBtn = document.getElementById('automation-toggle-btn');
+    window.__deepResearchBtn = document.getElementById('deep-research-btn');
+    window.__collectiveResearchBtn = document.getElementById('collective-research-btn');
+
+    const automationBtn = window.__automationBtn;
+    const deepResearchBtn = window.__deepResearchBtn;
+    const collectiveResearchBtn = window.__collectiveResearchBtn;
+
+    // 更新按钮和 body 状态的统一函数
+    function updateButtonStates(isAutomationActive, isDeepResearchActive, isCollectiveResearchActive = false) {
+        // 每次调用时重新获取按钮引用
+        const autoBtn = document.getElementById('automation-toggle-btn');
+        const deepBtn = document.getElementById('deep-research-btn');
+        const collectiveBtn = document.getElementById('collective-research-btn');
+        
+        if (autoBtn) {
+            if (isAutomationActive) {
+                autoBtn.classList.add('active');
+                autoBtn.classList.add('automation-on');
+            } else {
+                autoBtn.classList.remove('active');
+                autoBtn.classList.remove('automation-on');
+            }
+        }
+        if (deepBtn) {
+            if (isDeepResearchActive) {
+                deepBtn.classList.add('active');
+            } else {
+                deepBtn.classList.remove('active');
+            }
+        }
+        if (collectiveBtn) {
+            if (isCollectiveResearchActive) {
+                collectiveBtn.classList.add('active');
+            } else {
+                collectiveBtn.classList.remove('active');
+            }
+        }
+        document.body.classList.toggle('automation-mode', isAutomationActive);
+        document.body.classList.toggle('deep-research-mode', isDeepResearchActive);
+        document.body.classList.toggle('collective-research-mode', isCollectiveResearchActive);
+        if (!isCollectiveResearchActive && window.teardownCollectiveResearchUI) {
+            window.teardownCollectiveResearchUI();
+        }
+
+        // 同步更新 state 和 storage
+        if (window.state) {
+            window.state.automationEnabled = isAutomationActive;
+            window.state.deepResearchEnabled = isDeepResearchActive;
+            window.state.collectiveResearchEnabled = isCollectiveResearchActive;
+        }
+        // 保存到 storage
+        browser.storage.sync.set({ automationEnabled: isAutomationActive }).catch(() => {});
+
+        if (window.syncResearchModeButtons) {
+            window.syncResearchModeButtons();
+        }
+
+        // 调用原有的更新函数
+        if (window.updateAutomationPanel) window.updateAutomationPanel(isAutomationActive);
+    }
+    window.updateButtonStates = updateButtonStates;
+
+    // automation / collective research 按钮的点击处理已在 main.js 中实现，这里不再重复添加
+
+    if (deepResearchBtn) {
+        deepResearchBtn.addEventListener('click', () => {
+            // 每次点击时重新获取按钮引用，确保获取最新状态
+            const currentAutomationBtn = document.getElementById('automation-toggle-btn');
+            const currentDeepBtn = document.getElementById('deep-research-btn');
+            
+            const isAutomationActive = currentAutomationBtn && (currentAutomationBtn.classList.contains('automation-on') || currentAutomationBtn.classList.contains('active'));
+            const isDeepActive = currentDeepBtn.classList.contains('active');
+
+            if (!isAutomationActive) {
+                // 直接点击深度研究按钮 → 两个按钮同时点亮 → 深度研究模式
+                updateButtonStates(true, true, false);
+                return;
+            }
+
+            // 如果自动化已激活
+            if (isDeepActive) {
+                // 点灭深度研究按钮 → 普通自动化模式
+                updateButtonStates(true, false, false);
+            } else {
+                // 点亮深度研究按钮 → 深度研究模式
+                updateButtonStates(true, true, false);
+            }
+        });
+    }
+
     // Initial resize
     setTimeout(() => resizeTextarea(elements), 0);
 }
@@ -582,6 +882,7 @@ export function updateUIElementsWithTranslations(currentTranslations) {
 
     // Footer tabs
     setText('.footer-tab[data-tab="chat"][data-i18n="chatTab"]', 'chatTab');
+    setText('.footer-tab[data-tab="editor"][data-i18n="editorTab"]', 'editorTab');
     setText('.footer-tab[data-tab="settings"][data-i18n="settingsTab"]', 'settingsTab');
 
     // Status bar
@@ -704,8 +1005,8 @@ export function restoreSendButtonAndInput(state, elements, currentTranslations, 
     if (window.GeminiAPI && window.GeminiAPI.currentAbortController) {
         window.GeminiAPI.currentAbortController = null;
     }
-    if (window.PageTalkAPI && window.PageTalkAPI.currentAbortController) {
-        window.PageTalkAPI.currentAbortController = null;
+    if (window.InfinPilotAPI && window.InfinPilotAPI.currentAbortController) {
+        window.InfinPilotAPI.currentAbortController = null;
     }
 }
 
@@ -836,6 +1137,25 @@ export function addMessageActionButtons(messageElement, content, currentTranslat
 
     const buttonsToAppend = [];
 
+    // Add to DB Button
+    const addToDbButton = document.createElement('button');
+    addToDbButton.className = 'message-action-btn add-to-db-btn';
+    addToDbButton.title = 'Add to Knowledge Base'; // TODO: Add to translations
+    addToDbButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 1.5c-2.42 0-4.5 1.06-4.5 2.5S5.58 6.5 8 6.5s4.5-1.06 4.5-2.5S10.42 1.5 8 1.5z"/>
+            <path d="M3.5 5.404V8.5c0 1.44 2.02 2.5 4.5 2.5s4.5-1.06 4.5-2.5V5.404c-.5.44-1.52.81-2.75.995C8.75 6.48 8.38 6.5 8 6.5s-.75-.02-1.75-.095C5.02 6.214 4 5.844 3.5 5.404zM8 13c-2.42 0-4.5-1.06-4.5-2.5V8.268C4.02 8.61 5.02 8.91 6.25 9.095 7.25 9.18 7.62 9.2 8 9.2s.75-.02 1.75-.095C10.98 8.91 11.98 8.61 12.5 8.268V10.5c0 1.44-2.02 2.5-4.5 2.5z"/>
+            <path d="M3.5 10.904V14c0 1.44 2.02 2.5 4.5 2.5s4.5-1.06 4.5-2.5v-3.096c-.5.44-1.52.81-2.75.995C8.75 11.98 8.38 12 8 12s-.75-.02-1.75-.095C5.02 11.714 4 11.344 3.5 10.904z"/>
+        </svg>
+    `;
+    addToDbButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // The actual logic will be handled by an event listener on the chat container in main.js
+        // This button just needs to exist.
+        console.log(`Add to DB clicked for message ${messageId}`);
+    });
+    buttonsToAppend.push(addToDbButton);
+
     // Copy Button
     const copyButton = document.createElement('button');
     copyButton.classList.add('copy-button'); // Use base class
@@ -957,7 +1277,7 @@ function extractYouTubeVideoId(url) {
  * @param {string} videoUrl - 视频URL
  * @param {object} elements - DOM elements reference
  */
-function showVideoModal(videoUrl, elements) {
+function showVideoModal(videoUrl) {
     // 创建简单的视频模态框
     let videoModal = document.getElementById('video-modal');
     if (!videoModal) {
@@ -973,18 +1293,24 @@ function showVideoModal(videoUrl, elements) {
         `;
         document.body.appendChild(videoModal);
         
-        // 添加关闭事件
+        // 添加关闭事件（检查元素是否存在以防止异常）
         const closeBtn = videoModal.querySelector('.close-modal');
-        closeBtn.addEventListener('click', () => hideVideoModal());
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => hideVideoModal());
+        }
         videoModal.addEventListener('click', (e) => {
             if (e.target === videoModal) hideVideoModal();
         });
     }
     
-    const modalVideo = videoModal.querySelector('#modal-video source');
+    const modalSource = videoModal.querySelector('#modal-video source');
     const video = videoModal.querySelector('#modal-video');
-    modalVideo.src = videoUrl;
-    video.load(); // 重新加载视频
+    if (modalSource) {
+        modalSource.src = videoUrl;
+        if (video && typeof video.load === 'function') {
+            video.load(); // 重新加载视频
+        }
+    }
     videoModal.style.display = 'block';
 }
 
@@ -1278,14 +1604,14 @@ function handlePopupKeyDown(event) {
                 const allChecked = itemsEls.length > 0 && itemsEls.every(li => li.classList.contains('checked'));
                 const selectIcon = () => `
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/>
-                        <polyline points=\"9 12 11 14 15 10\"/>
+                        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2"/>
+                        <polyline points="9 12 11 14 15 10"/>
                     </svg>`;
                 const clearIcon = () => `
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/>
-                        <line x1=\"8\" y1=\"8\" x2=\"16\" y2=\"16\"/>
-                        <line x1=\"16\" y1=\"8\" x2=\"8\" y2=\"16\"/>
+                        <rect x=\"3\" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1=\"8\" y1=\"8\" x2=\"16\" y2=\"16"/>
+                        <line x1=\"16\" y1=\"8\" x2=\"8\" y2=\"16"/>
                     </svg>`;
                 if (allChecked) {
                     selectAllBtn.title = (window.I18n?.tr && window.I18n.tr('clearAll', {}, {})) || 'Clear all';
@@ -1345,7 +1671,7 @@ export function updateSelectedTabsBarUI(selectedTabs, elements, onRemoveTabCallb
     selectedTabs.forEach(tab => {
         const tabChip = document.createElement('div');
         tabChip.className = 'selected-tab-chip';
-        tabChip.title = `${tab.title || '-'} `; // 添加 title 属性显示完整信息
+        tabChip.title = `${tab.title || '-'} `;
         if (tab.isLoading) tabChip.classList.add('loading');
         if (tab.content === null && !tab.isLoading) tabChip.classList.add('error'); // 内容为null且不是loading状态，则标记为error
 
@@ -1381,4 +1707,161 @@ export function updateSelectedTabsBarUI(selectedTabs, elements, onRemoveTabCallb
         const barHeight = bar.offsetHeight;
         elements.chatMessages.style.paddingBottom = `calc(${barHeight}px + var(--spacing-sm))`; 
     }
+}
+
+// --- Chat History UI ---
+
+/**
+ * Creates and shows the chat history modal.
+ * @param {object} elements - DOM elements reference
+ * @param {object} currentTranslations - Translations object
+ * @param {function} loadSessionCallback - Callback to load a session
+ * @param {function} deleteSessionCallback - Callback to delete a session
+ */
+export async function showHistoryModal(elements, currentTranslations, loadSessionCallback, deleteSessionCallback) {
+    // Close if already open
+    closeHistoryModal();
+
+    const modal = document.createElement('div');
+    modal.id = 'history-modal';
+    modal.className = 'history-modal';
+
+    modal.innerHTML = `
+        <div class="history-modal-content">
+            <div class="history-modal-header">
+                <h3 data-i18n="chatHistoryTitle">${_('chatHistoryTitle', {}, currentTranslations)}</h3>
+                <button id="close-history-modal" class="close-modal-btn" title="${_('close', {}, currentTranslations)}">&times;</button>
+            </div>
+            <div class="history-modal-body">
+                <ul id="history-list" class="history-list"></ul>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const historyList = modal.querySelector('#history-list');
+    const closeButton = modal.querySelector('#close-history-modal');
+
+    closeButton.addEventListener('click', closeHistoryModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeHistoryModal();
+        }
+    });
+
+    await renderHistoryList(historyList, currentTranslations, loadSessionCallback, deleteSessionCallback);
+
+    // Show modal with animation
+    setTimeout(() => modal.classList.add('visible'), 10);
+}
+
+/**
+ * Renders the list of history items in the modal.
+ * @param {HTMLElement} listElement - The <ul> element to render into.
+ * @param {object} currentTranslations - Translations object
+ * @param {function} loadSessionCallback - Callback to load a session
+ * @param {function} deleteSessionCallback - Callback to delete a session
+ */
+async function renderHistoryList(listElement, currentTranslations, loadSessionCallback, deleteSessionCallback) {
+    const history = await window.historyManager.getHistory();
+    listElement.innerHTML = '';
+
+    if (history.length === 0) {
+        listElement.innerHTML = `<li class="history-item-empty">${_('noHistoryFound', {}, currentTranslations)}</li>`;
+        return;
+    }
+
+    history.forEach(session => {
+        const item = document.createElement('li');
+        item.className = 'history-item';
+        item.dataset.sessionId = session.id;
+
+        const title = escapeHtml(session.title || _('untitledChat', {}, currentTranslations));
+        const date = new Date(session.id.split('_')[1] * 1).toLocaleString();
+
+        item.innerHTML = `
+            <div class="history-item-main">
+                <span class="history-item-title">${title}</span>
+                <span class="history-item-date">${date}</span>
+            </div>
+            <div class="history-item-actions">
+                <button class="history-action-btn load-btn" title="${_('continueChat', {}, currentTranslations)}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>
+                </button>
+                <button class="history-action-btn delete-btn" title="${_('deleteChat', {}, currentTranslations)}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                </button>
+            </div>
+        `;
+
+        item.querySelector('.load-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadSessionCallback(session.id);
+            closeHistoryModal();
+        });
+
+        item.querySelector('.delete-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm(_('confirmDeleteChat', {}, currentTranslations))) {
+                await deleteSessionCallback(session.id);
+                item.remove(); // Or re-render the whole list
+                // Check if list is now empty
+                if (listElement.children.length === 0) {
+                    listElement.innerHTML = `<li class="history-item-empty">${_('noHistoryFound', {}, currentTranslations)}</li>`;
+                }
+            }
+        });
+
+        listElement.appendChild(item);
+    });
+}
+
+/**
+ * Closes the chat history modal.
+ */
+export function closeHistoryModal() {
+    const modal = document.getElementById('history-modal');
+    if (modal) {
+        modal.classList.remove('visible');
+        setTimeout(() => modal.remove(), 300); // Wait for animation
+    }
+}
+
+
+
+function createAvatarElement(sender, state) {
+    const header = document.createElement('div');
+    header.className = 'message-header';
+
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'chat-avatar';
+
+    const nameContainer = document.createElement('div');
+    nameContainer.className = 'chat-name';
+
+    if (sender === 'user') {
+        avatarImg.src = state.userAvatar || '../icons/user.svg';
+        nameContainer.textContent = state.userName || 'User';
+    } else { // bot
+        const modelConfig = window.ModelManager.instance.getModelApiConfig(state.model);
+        const provider = window.ProviderManager.getProvider(modelConfig.providerId);
+        if (provider) {
+            avatarImg.src = `../icons/${provider.icon}`;
+            const providerName = document.createElement('span');
+            providerName.className = 'provider-name';
+            providerName.textContent = provider.name;
+            const modelName = document.createElement('span');
+            modelName.textContent = modelConfig.apiModelName;
+            nameContainer.appendChild(providerName);
+            nameContainer.appendChild(modelName);
+        } else {
+            avatarImg.src = '../icons/SiliconFlow.svg';
+            nameContainer.textContent = state.model;
+        }
+    }
+
+    header.appendChild(avatarImg);
+    header.appendChild(nameContainer);
+    return header;
 }

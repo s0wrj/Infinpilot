@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Theme Management and Draggable Button
+ * Infinpilot - Theme Management and Draggable Button
  */
 
 /**
@@ -21,6 +21,10 @@ export function applyTheme(isDarkMode, elements) {
         body.classList.remove('hljs-theme-dark');
         if (elements.moonIconSettings) elements.moonIconSettings.style.display = 'inline-block';
         if (elements.sunIconSettings) elements.sunIconSettings.style.display = 'none';
+    }
+    // NEW: Update CodeMirror theme
+    if (window.InfinPilotEditor?.updateTheme) {
+        window.InfinPilotEditor.updateTheme(isDarkMode);
     }
 }
 
@@ -46,16 +50,20 @@ export async function updateMermaidTheme(isDarkMode, rerenderAllMermaidChartsCal
 }
 
 /**
- * 切换主题 (临时切换，不保存)
+ * 切换主题 (保存到 localStorage)
  * @param {object} state - Global state reference
  * @param {object} elements - DOM elements reference
  * @param {function} rerenderAllMermaidChartsCallback - Callback
  */
 export function toggleTheme(state, elements, rerenderAllMermaidChartsCallback) {
-    console.log('User manually toggled theme (temporary).');
+    console.log('User manually toggled theme.');
     state.darkMode = !state.darkMode;
     applyTheme(state.darkMode, elements);
     updateMermaidTheme(state.darkMode, rerenderAllMermaidChartsCallback);
+    
+    // 保存主题设置到 localStorage
+    localStorage.setItem('infinpilot-darkMode', state.darkMode.toString());
+    console.log("Theme preference saved to localStorage.");
 }
 
 // --- Draggable Button Logic ---
@@ -131,13 +139,13 @@ export function makeDraggable(element, onClickCallback) {
 }
 
 /**
- * 保存按钮位置到 chrome.storage.sync
+ * 保存按钮位置到 browser.storage.sync
  * @param {string} top - 按钮的 top 样式值
  */
 function saveButtonPosition(top) {
-    chrome.storage.sync.set({ themeButtonPosition: { top } }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving button position:", chrome.runtime.lastError);
+    browser.storage.sync.set({ themeButtonPosition: { top } }, () => {
+        if (browser.runtime.lastError) {
+            console.error("Error saving button position:", browser.runtime.lastError);
         } else {
             // console.log("Button position saved.");
         }
@@ -145,13 +153,13 @@ function saveButtonPosition(top) {
 }
 
 /**
- * 从 chrome.storage.sync 加载并应用按钮位置
+ * 从 browser.storage.sync 加载并应用按钮位置
  * @param {object} elements - DOM elements reference
  */
 export function loadButtonPosition(elements) {
-    chrome.storage.sync.get('themeButtonPosition', (result) => {
-        if (chrome.runtime.lastError) {
-            console.error("Error loading button position:", chrome.runtime.lastError);
+    browser.storage.sync.get('themeButtonPosition', (result) => {
+        if (browser.runtime.lastError) {
+            console.error("Error loading button position:", browser.runtime.lastError);
             setDefaultButtonPosition(elements);
             return;
         }

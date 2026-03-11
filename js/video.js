@@ -1,5 +1,5 @@
 /**
- * Pagetalk - YouTube Video Handling Functions
+ * Infinpilot - YouTube Video Handling Functions
  */
 import { generateUniqueId, escapeHtml } from './utils.js';
 import { tr as _ } from './utils/i18n.js';

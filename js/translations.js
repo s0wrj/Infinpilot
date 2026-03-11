@@ -2,8 +2,16 @@
 if (typeof window.translations === 'undefined') {
   window.translations = {
   'zh-CN': {
+    // --- Deep Research ---
+    'deepResearch.title': '深度研究',
+    'deepResearch.planning': '规划中…',
+    'deepResearch.step': '步骤',
+    'deepResearch.completed': '完成',
+    'deepResearch.copyReport': '复制报告',
+    'deepResearch.downloadMarkdown': '下载 Markdown',
+    'deepResearch.noSnippet': '无摘要',
     // --- General UI ---
-    'appName': 'Pagetalk',
+    'appName': 'Infinpilot',
     'loading': '加载中...',
     'cancel': '取消',
     'delete': '删除',
@@ -23,19 +31,22 @@ if (typeof window.translations === 'undefined') {
     'changelogTitle': '更新',
     'changelogDate': '日期',
     'changelogChanges': '更新内容',
-    'changelogOK': 'OK', 
-    'changelogNeverShow': '不再显示', 
+    'chatHistoryTitle': '历史记录管理',
+    'citationsHeader': '引用',
+    'citationsToggle': '引用#{count}',
+    'toggleCitations': '切换引用可见性',
+    'confirmOpenTabs': '此聊天记录关联了 {count} 个标签页。是否在新标签页中打开它们？',
 
     // --- HTML Elements (sidepanel.html) ---
     'htmlLang': 'zh-CN',
-    'pageTitle': 'Pagetalk',
+    'pageTitle': 'Infinpilot',
     'modelLabel': '模型：',
     'modelSelectLabel': '选择模型',
     'agentLabel': '助手：',
     'agentSelectLabel': '选择助手',
-    'clearContextTitle': '清除聊天记录',
+    'clearContextTitle': '新建聊天',
     'closePanelTitle': '关闭面板',
-    'welcomeHeading': '欢迎使用 PageTalk :)',
+    'welcomeHeading': '欢迎使用 InfinPilot ✨',
     'summarizeAction': '总结一下',
     'imagePreviewAlt': 'Full size image preview', // Keep English for alt? Or translate? Let's translate.
     'imagePreviewAltTranslated': '全尺寸图片预览',
@@ -46,6 +57,40 @@ if (typeof window.translations === 'undefined') {
     'sendMessageTitle': '发送消息',
     'settingsTab': '设置', // Footer tab
     'chatTab': '聊天', // Footer tab
+    'editorTab': '编辑器',
+      'editorNew': '新建',
+      'editorImport': '导入',
+      'editorExport': '导出',
+      'editorAiCollaborate': 'AI 协作',
+      'editorAIGenerateOutline': '生成大纲',
+      'editorAIContinueWriting': '续写',
+      'editorAIRewriteSelection': '改写所选',
+      'editorAIPolishSelection': '润色所选',
+            'editorAIFixGrammar': '修复语法',
+      'editorAIIncludePageContent': '包含页面内容',
+      'editorAICustomPromptSubmit': '提交',
+      'editorInsertCurrentUrl': '插入当前网址',
+      'editorInsertAllTabs': '插入全部打开标签',
+      'editorInsertScreenshot': '插入截图',
+      'editorViewEdit': '编辑',
+      'editorViewPreview': '预览',
+      'editorViewSplit': '分屏',
+      'editorStatusReady': '就绪',
+      'editorAutosaved': '已自动保存',
+      'editorNewDoc': '新建文档',
+      'editorImported': '已导入',
+      'editorExported': '已导出',
+      'editorInsertingUrl': '正在插入网址...',
+      'editorInsertedUrl': '已插入网址',
+      'editorInsertedTabs': '已插入标签页列表',
+      'editorCapturing': '正在截屏...',
+      'editorCaptureFailed': '截屏失败',
+      'editorAiWorking': 'AI 协作中...',
+      'editorAiApplied': 'AI 已应用',
+      'editorAiUnavailable': 'AI 接口不可用',
+      'editorWordCount': '字数：{count}',
+      'editorSelectionCount': '选中：{count}',
+      'editorCursorPos': '行 {line}, 列 {col}',
     'generalSettingsNav': '通用',
     'agentSettingsNav': '助手',
     'modelSettingsNav': '模型',
@@ -330,6 +375,22 @@ if (typeof window.translations === 'undefined') {
     'proxyAddressLabel': '代理设置',
     'proxyAddressPlaceholder': 'http://127.0.0.1:7890 或 socks5://127.0.0.1:1080',
     'proxyAddressHint': '支持 HTTP 和 SOCKS5 代理，适用于所有AI供应商，留空则禁用代理。',
+    'editorAppearanceLabel': '编辑器外观',
+    'editorAppearanceDescription': '自定义编辑器和预览区域的背景颜色。',
+    'editorBgColorLabel': '编辑区背景:',
+    'previewBgColorLabel': '预览区背景:',
+    'editorGutterBgColorLabel': '行号背景:',
+    'editorLinenumberColorLabel': '行号文本:',
+    'editorGutterBgColorTooltip': '编辑器中代码行号区域的背景颜色。',
+    'editorLinenumberColorTooltip': '编辑器中代码行号的文本颜色。',
+        'resetToDefault': '恢复默认',
+    'userProfileSettings': '用户资料',
+    'userProfileSettingsDescription': '自定义您的头像和昵称。',
+    'userNameLabel': '昵称:',
+    'userNamePlaceholder': '输入您的昵称',
+    'userAvatarLabel': '头像URL:',
+    'userAvatarPlaceholder': '输入头像的URL',
+    'userProfileSaved': '用户资料已保存',
     'proxySetSuccess': '代理设置已应用',
     'proxySetError': '代理设置失败：{error}',
     'proxyCleared': '代理设置已清除',
@@ -351,12 +412,6 @@ if (typeof window.translations === 'undefined') {
     'relatedContext': '相关上下文',
     'userQuestion': '用户问题',
     'noProviderSelected': '请先选择供应商',
-
-    // --- 供应商 Base URL 覆盖 ---
-    'providerBaseUrlLabel': 'Base URL（可选）',
-    'providerBaseUrlPlaceholder': '{url}',
-    'providerBaseUrlHint': '按供应商覆盖 API 基础地址。用于直连不通或需经代理的场景。',
-    'providerBaseUrlInvalidUrl': 'Base URL 格式无效',
 
     // --- 自定义提供商相关翻译 ---
     'addProvider': '添加供应商',
@@ -381,6 +436,23 @@ if (typeof window.translations === 'undefined') {
 
     // --- 快捷操作相关翻译 ---
     'quickActionsNav': '快捷操作',
+    'vectorDbSettingsNav': '知识库',
+    'vectorDbSettingsHeading': '知识库管理',
+    'vectorDbFailedToInitialize': '知识库初始化失败',
+    'vectorDbDescription': '创建和管理您的本地知识库。',
+    'vectorDbInputPlaceholder': '输入新的知识库名称',
+    'vectorDbEmpty': '暂无知识库。',
+    'vectorDbImportTitle': '向此知识库导入文件',
+    'vectorDbDeleteTitle': '删除知识库',
+    'vectorDbCreated': '知识库已创建',
+    'vectorDbCreateError': '创建知识库时出错',
+    'vectorDbDeleteConfirm': '您确定要删除此知识库及其所有内容吗？',
+    'vectorDbDeleted': '知识库已删除',
+    'vectorDbDeleteError': '删除知识库时出错',
+    'vectorDbImporting': '正在导入 {fileName}...',
+    'vectorDbImported': '成功导入 {fileName}',
+    'vectorDbImportError': '导入文件时出错: {error}',
+    'vectorDbReadFileError': '读取文件时出错: {error}',
     'quickActionsSettings': '快捷操作设置',
     'quickActionsDescription': '快捷操作允许您在主面板中快速执行预设的AI指令。您可以自定义操作名称、图标和提示词。',
     'quickActionsManagement': '快捷操作管理',
@@ -413,7 +485,7 @@ if (typeof window.translations === 'undefined') {
     'importMerge': '合并（保留现有操作）',
     'importReplace': '替换（删除现有操作）',
     'import': '导入',
-    'importSuccess': '成功导入 {count} 个快捷操作',
+    'importSuccess': '成功导入 {count} 个自定义选项',
     'importNoActions': '没有导入任何操作',
     'importProcessFailed': '导入处理失败',
     'quickActionError': '快捷操作执行失败',
@@ -452,8 +524,6 @@ Notice：
 5. 记得用双引号包裹文本，避免生成中文内容时出现syntax error in graph
 
 
-
-
 Format：
 
 ### 一、<Title 1>
@@ -480,7 +550,7 @@ Format：
 # 核心指令
 你将接收一段用户划词选中的文本。请严格根据文本的语言和长度，判断其类型，并遵循以下对应规则，直接输出结果，无需任何解释或互动。
 
----
+---\n
 
 ### 规则 1：处理单个英文单词
 - **判断条件**：用户选中的文本是 **单个** 英文单词。
@@ -491,7 +561,7 @@ Format：
   - **实用例句**：[1-2 条地道例句，附中文翻译]
   - **深度拓展 (可选)**：[如果单词有有趣的来源、文化背景或易混淆点，用中文简要说明]
 
----
+---\n
 
 ### 规则 2：处理英文短语或句子
 - **判断条件**：用户选中的文本是包含 **多个单词** 的英文短语或句子。
@@ -500,17 +570,102 @@ Format：
   - **其他译法 (可选)**：如果存在，提供 1-2 个在不同语境下的其他翻译选项。
   - **用法解析**：用中文简要说明不同译法之间的细微差别、语气或适用语境，帮助用户理解。
 
----
+---\n
 
 ### 规则 3：处理中文内容
 - **判断条件**：用户选中的文本是中文词语或句子。
 - **输出格式**：提供【英文翻译建议】。
   - **提供 2-3 个翻译选项**：给出最地道的英文翻译。如果选中的是中文单词，请为对应的英文单词附上美式音标。
   - **辨析与语境**：用中文清晰解释每个译文的语气、侧重点及最适用的场景，帮助用户选择最恰当的表达。`,
+    // --- Automation & Tool Calls ---
+    'automationSettingsNav': '自动化',
+    'automationSettingsHeading': '浏览器自动化',
+    'automationGlobalToggleLabel': '启用浏览器自动化',
+    'automationGlobalToggleDesc': '允许聊天模型调用浏览器自动化工具',
+    'automationToolsListLabel': '工具列表',
+    'automationToolsListDesc': '可针对每个工具单独启用或关闭',
+    'automationMaxStepsLabel': '每步最多工具调用次数',
+    'automationMaxStepsDesc': '限制 ReAct 循环中每次对话最多可执行的工具步数（1-30，默认 8）',
+    'automationEnableAll': '全部开启',
+    'automationDisableAll': '全部关闭',
+    'automationToggleOn': '浏览器自动化: 开启',
+    'automationToggleOff': '浏览器自动化: 关闭',
+    // Claude Agent SDK Configuration
+    'agentSdkConfigLabel': 'Claude Agent SDK 配置',
+    'agentSdkConfigDesc': '配置 AI Agent 的 API 端点和认证',
+    'agentSdkEndpointLabel': 'API 端点 URL:',
+    'agentSdkEndpointPlaceholder': 'https://api.anthropic.com',
+    'agentSdkEndpointDesc': '留空使用默认 Anthropic API，自定义端点用于代理或第三方',
+    'agentSdkApiKeyLabel': 'API Key:',
+    'agentSdkApiKeyPlaceholder': 'sk-ant-...',
+    'agentSdkApiKeyDesc': 'Anthropic API Key，用于认证请求',
+    'agentSdkModelLabel': '模型:',
+    'agentSdkModelPlaceholder': 'claude-sonnet-4-5',
+    'agentSdkModelDesc': '输入模型名称，如 claude-sonnet-4-5、claude-opus-4-5 等',
+    'agentSdkPermissionLabel': '权限模式:',
+    'agentSdkPermissionDesc': '控制自动化操作的权限级别',
+    'agentSdkPermissionDefault': '默认 (每次请求确认)',
+    'agentSdkPermissionEdits': '自动批准编辑',
+    'agentSdkPermissionBypass': '跳过所有权限检查',
+    'agentSdkSave': '保存配置',
+    'agentSdkTest': '测试连接',
+    'agentSdkSaved': '配置已保存',
+    'agentSdkTesting': '正在测试连接...',
+    'agentSdkTestSuccess': '连接成功!',
+    'agentSdkTestFailed': '连接失败',
+    'agentSdkTestAuthFailed': '认证失败，请检查 API Key',
+    'agentSdkTestError': '连接错误',
+    'agentSdkApiKeyMissing': '请先配置 Claude Agent SDK 的 API Key',
+    'agentSdkError': '自动化错误',
+    'toolUse': '使用工具',
+    'toolName': '工具名称',
+    'toolParameters': '工具参数',
+    'toolResult': '工具结果',
+    'copyParameters': '复制参数',
+    'copyResult': '复制结果',
+    'collapseResult': '折叠结果',
+    'expandResult': '展开结果',
+    'retryStep': '重试该步',
+    'tool_get_all_tabs_description': '获取浏览器中所有打开标签页的列表。',
+    'tool_get_current_tab_description': '获取当前活动标签页的详细信息。',
+    'tool_switch_to_tab_description': '通过标签页ID切换到指定的标签页。',
+    'tool_close_tab_description': '通过标签页ID关闭一个标签页。',
+    'tool_open_url_description': '使用指定的URL打开一个新标签页。',
+    'tool_reload_tab_description': '重新加载当前活动标签页或通过ID指定的标签页。',
+    'tool_get_page_text_description': '从当前页面提取可见的文本内容。',
+    'tool_get_interactive_elements_description': '获取当前页面上所有可交互元素的列表，例如按钮、链接和输入框。',
+    'tool_click_description': '在当前页面上点击一个元素。',
+    'tool_fill_description': '用文本填充一个输入字段。',
+    'tool_clear_description': '清除输入字段的值。',
+    'tool_get_value_description': '获取输入字段的值。',
+    'tool_scroll_into_view_description': '将一个元素滚动到浏览器窗口的可见区域。',
+    'tool_hover_description': '在当前页面上悬停在一个元素上。',
+    'tool_highlight_description': '在页面上高亮一个元素，使其在视觉上突出。',
+    'tool_search_page_text_description': '在当前页面上搜索指定的文本查询。',
+    'tool_get_page_links_description': '获取当前页面上的所有链接。',
+    'tool_get_page_images_description': '获取当前页面上的所有图片。',
+    'tool_find_element_description': '通过CSS选择器、文本或角色在页面上查找指定的元素。',
+    'tool_submit_description': '提交一个表单。如果未指定元素，则尝试查找离最后交互元素最近的表单。',
+    'tool_go_back_description': '在当前页面上后退历史记录。',
+    'tool_go_forward_description': '在当前页面上前进历史记录。',
+    'tool_select_option_description': '通过值或可见文本在<select>控件中选择一个选项。',
+    'tool_wait_for_selector_description': '等待一个CSS选择器出现在DOM中。',
+    'tool_screenshot_description': '捕获当前标签页的用户选择区域，并返回PNG数据URL及页面元数据。',
+    'tool_navigate_description': '在当前标签页中导航到指定URL（不新开标签）。',
+    'tool_wait_for_navigation_description': '等待指定标签页完成一次导航，或直到超时。',
+    'tool_sleep_description': '等待指定毫秒数后继续执行。'
   },
   'en': {
+    // --- Deep Research ---
+    'deepResearch.title': 'Deep Research',
+    'deepResearch.planning': 'planning…',
+    'deepResearch.step': 'Step',
+    'deepResearch.completed': 'Completed',
+    'deepResearch.copyReport': 'Copy Report',
+    'deepResearch.downloadMarkdown': 'Download Markdown',
+    'deepResearch.noSnippet': 'No snippet',
     // --- General UI ---
-    'appName': 'Pagetalk',
+    'appName': 'Infinpilot',
     'loading': 'Loading...',
     'save': 'Save',
     'cancel': 'Cancel',
@@ -532,19 +687,22 @@ Format：
     'changelogVersion': '', 
     'changelogDate': 'Date',
     'changelogChanges': 'Changes',
-    'changelogOK': 'OK', 
-    'changelogNeverShow': 'Don\'t show again',
+    'chatHistoryTitle': 'Chat History',
+    'citationsHeader': 'References',
+    'citationsToggle': 'References#{count}',
+    'toggleCitations': 'Toggle Citations',
+    'confirmOpenTabs': 'This chat history is associated with {count} tabs. Do you want to open them in new tabs？',
 
     // --- HTML Elements (sidepanel.html) ---
     'htmlLang': 'en',
-    'pageTitle': 'Pagetalk',
+    'pageTitle': 'Infinpilot',
     'modelLabel': 'Model:',
     'modelSelectLabel': 'Select Model',
     'agentLabel': 'Agent:',
     'agentSelectLabel': 'Select Agent',
-    'clearContextTitle': 'Clear chat history',
+    'clearContextTitle': 'New Chat',
     'closePanelTitle': 'Close Panel',
-    'welcomeHeading': 'Welcome to PageTalk :)',
+    'welcomeHeading': 'Welcome to InfinPilot :)',
     'summarizeAction': 'Summarize',
     'imagePreviewAlt': 'Full size image preview',
     'imagePreviewAltTranslated': 'Full size image preview', // Keep English for alt
@@ -555,6 +713,41 @@ Format：
     'sendMessageTitle': 'Send Message',
     'settingsTab': 'Settings',
     'chatTab': 'Chat',
+    'editorTab': 'Editor',
+      'editorNew': 'New',
+      'editorImport': 'Import',
+      'editorExport': 'Export',
+      'editorAiCollaborate': 'AI Collaborate',
+      'editorAIGenerateOutline': 'Generate Outline',
+      'editorAIContinueWriting': 'Continue Writing',
+      'editorAIRewriteSelection': 'Rewrite Selection',
+      'editorAIPolishSelection': 'Polish Selection',
+            'editorAIFixGrammar': 'Fix Grammar',
+            'editorAIIncludePageContent': 'Include Page Content',
+      'editorAICustomPromptSubmit': 'Submit',
+      'editorInsertCurrentUrl': 'Insert Current URL',
+      'editorInsertCurrentUrl': 'Insert Current URL',
+      'editorInsertAllTabs': 'Insert All Open Tabs',
+      'editorInsertScreenshot': 'Insert Screenshot',
+      'editorViewEdit': 'Edit',
+      'editorViewPreview': 'Preview',
+      'editorViewSplit': 'Split',
+      'editorStatusReady': 'Ready',
+      'editorAutosaved': 'Autosaved',
+      'editorNewDoc': 'New Document',
+      'editorImported': 'Imported',
+      'editorExported': 'Exported',
+      'editorInsertingUrl': 'Inserting URL...', 
+      'editorInsertedUrl': 'URL inserted',
+      'editorInsertedTabs': 'Tabs list inserted',
+      'editorCapturing': 'Capturing...', 
+      'editorCaptureFailed': 'Capture failed',
+      'editorAiWorking': 'AI working...', 
+      'editorAiApplied': 'AI applied',
+      'editorAiUnavailable': 'AI not available',
+      'editorWordCount': 'Words: {count}',
+      'editorSelectionCount': 'Selected: {count}',
+      'editorCursorPos': 'Ln {line}, Col {col}',
     'generalSettingsNav': 'General',
     'agentSettingsNav': 'Agent',
     'modelSettingsNav': 'Model',
@@ -582,7 +775,7 @@ Format：
     'themeToggleTitle': 'Toggle dark/light mode',
     'contextStatusPrefix': 'Context:',
     'contextStatusNone': 'None',
-    'contextStatusExtracting': 'Extracting...',
+    'contextStatusExtracting': 'Extracting...', 
     'contextStatusFailed': 'Extraction failed',
     'contextStatusChars': '{charCount} chars',
     'connectionIndicatorConnected': 'Connected',
@@ -692,22 +885,22 @@ Format：
     'chatExportEmptyError': 'No chat history to export',
     'chatExportSuccess': 'Chat history exported',
     'regenerateError': 'Error regenerating response: {error}',
-    'thinking': 'Thinking...',
-    'messageDeleted': 'Message deleted',
+    'thinking': 'Thinking...', 
+    'messageDeleted': 'Message deleted', 
     'deleteFailedNotFound': 'Delete failed: Message not found',
     'deleteFailedElementNotFound': 'Delete failed: Message element not found',
     'regenerateFailedNotFound': 'Regenerate failed: Message not found',
     'regenerateFailedUserNotFound': 'Regenerate failed: Could not find the corresponding user message',
-    'buttonPositionSaved': 'Button position saved',
-    'buttonPositionLoaded': 'Button position loaded: top={top}, right=fixed',
+    'buttonPositionSaved': 'Button position saved', 
+    'buttonPositionLoaded': 'Button position loaded: top={top}, right=fixed', 
     'buttonPositionLoadError': 'Error loading button position',
     'buttonPositionSaveError': 'Error saving button position',
     'setDefaultButtonPositionLog': 'Setting default button position',
-    'agentSettingsSaved': 'Saved',
-    'testingConnection': 'Testing connection...',
-    'saving': 'Saving...',
-    'savingInProgress': 'Saving in progress...',
-    'containsNImages': '[Contains {count} image(s)]', // For text export
+    'agentSettingsSaved': 'Saved', 
+    'testingConnection': 'Testing connection...', 
+    'saving': 'Saving...', 
+    'savingInProgress': 'Saving in progress...', 
+    'containsNImages': '[Contains {count} image(s)]', 
     'tabContentLoadedSuccess': 'Page content loaded',
     'tabContentLoadFailed': 'Failed to load content for tab \'{title}...\': {error}',
     'tabsAddedSuccess': 'Loaded {count} pages',
@@ -779,7 +972,7 @@ Format：
     'maxOutputLength': 'Max Output Length',
     'optionIcon': 'Option Icon',
     'selectIcon': 'Select Icon',
-    'searchIcons': 'Search icons...',
+    'searchIcons': 'Search icons...', 
     'lucideLoadError': 'Failed to load Lucide icon library, please refresh the page and try again',
     'autoSaveNotice': 'Changes will be saved automatically',
     'unsavedChanges': 'Unsaved changes',
@@ -793,7 +986,7 @@ Format：
     'addModelsTitle': 'Add Models',
     'addModelsDialogTitle': 'Add Models',
     'addModelsDialogClose': 'Close',
-    'searchModelsPlaceholder': 'Search models...',
+    'searchModelsPlaceholder': 'Search models...', 
     'modelsFoundMessage': 'Found {count} new models, please select the models to add:',
     'manualAddModel': 'Manual Add',
     'manualAddModelDialogTitle': 'Manual Add Model',
@@ -814,7 +1007,7 @@ Format：
     'selectedCountMessage': 'Selected {count} models',
     'addModelsConfirm': 'Add',
     'addModelsCancel': 'Cancel',
-    'fetchingModels': 'Searching...',
+    'fetchingModels': 'Searching...', 
     'noNewModelsFound': 'No new models found',
     'modelsAddedSuccess': 'Successfully added {count} new models',
     'modelsReactivatedSuccess': 'Successfully reactivated {count} models',
@@ -838,6 +1031,22 @@ Format：
     'proxyAddressLabel': 'Proxy Settings',
     'proxyAddressPlaceholder': 'http://127.0.0.1:7890 or socks5://127.0.0.1:1080',
     'proxyAddressHint': 'Supports HTTP and SOCKS5 proxies for all AI providers, leave empty to disable.',
+    'editorAppearanceLabel': 'Editor Appearance',
+    'editorAppearanceDescription': 'Customize the background colors of the editor and preview areas.',
+    'editorBgColorLabel': 'Editor Background:',
+    'previewBgColorLabel': 'Preview Background:',
+    'editorGutterBgColorLabel': 'Gutter Background:',
+    'editorLinenumberColorLabel': 'Line Number Text:',
+    'editorGutterBgColorTooltip': 'Background color for the line number gutter in the editor.',
+    'editorLinenumberColorTooltip': 'Text color for the line numbers in the editor.',
+    'resetToDefault': 'Reset to Default',
+    'userProfileSettings': 'User Profile',
+    'userProfileSettingsDescription': 'Customize your avatar and nickname.',
+    'userNameLabel': 'Nickname:',
+    'userNamePlaceholder': 'Enter your nickname',
+    'userAvatarLabel': 'Avatar:',
+    'userAvatarPlaceholder': 'Enter the URL for your avatar',
+    'userProfileSaved': 'User profile saved',
     'proxySetSuccess': 'Proxy settings applied',
     'proxySetError': 'Failed to set proxy: {error}',
     'proxyCleared': 'Proxy settings cleared',
@@ -849,8 +1058,8 @@ Format：
     'testConnection': 'Test',
     'discoverModels': 'Fetch',
     'currentModelLabel': 'Current Model:',
-    'testingConnection': 'Testing...',
-    'discoveringModels': 'Fetching...',
+    'testingConnection': 'Testing...', 
+    'discoveringModels': 'Fetching...', 
     'noModelsSelected': 'No models selected yet, click "Fetch" or "Manual Add"',
     'providerApiKeyPlaceholder': 'Enter your API Key',
     'getApiKeyHint': 'Get API Key',
@@ -858,12 +1067,6 @@ Format：
     'relatedContext': 'Related Context',
     'userQuestion': 'User Question',
     'noProviderSelected': 'Please select a provider first',
-
-    // --- Provider Base URL Override ---
-    'providerBaseUrlLabel': 'Base URL (optional)',
-    'providerBaseUrlPlaceholder': '{url}',
-    'providerBaseUrlHint': 'Override API base URL per provider. Useful when direct access is blocked or via proxy.',
-    'providerBaseUrlInvalidUrl': 'Invalid Base URL format',
 
     // --- Custom Provider Related Translations ---
     'addProvider': 'Add Provider',
@@ -888,6 +1091,23 @@ Format：
 
     // --- Quick Actions Related Translations ---
     'quickActionsNav': 'Quick Actions',
+    'vectorDbSettingsNav': 'Knowledge Base',
+    'vectorDbSettingsHeading': 'Knowledge Base Management',
+    'vectorDbFailedToInitialize': 'Failed to initialize Knowledge Base',
+    'vectorDbDescription': 'Create and manage your local knowledge bases.',
+    'vectorDbInputPlaceholder': 'Enter new knowledge base name',
+    'vectorDbEmpty': 'No knowledge bases yet.',
+    'vectorDbImportTitle': 'Import file to this knowledge base',
+    'vectorDbDeleteTitle': 'Delete Knowledge Base',
+    'vectorDbCreated': 'Knowledge base created',
+    'vectorDbCreateError': 'Error creating knowledge base',
+    'vectorDbDeleteConfirm': 'Are you sure you want to delete this knowledge base and all its content?',
+    'vectorDbDeleted': 'Knowledge base deleted',
+    'vectorDbDeleteError': 'Error deleting knowledge base',
+    'vectorDbImporting': 'Importing {fileName}...',
+    'vectorDbImported': 'Successfully imported {fileName}',
+    'vectorDbImportError': 'Error importing file: {error}',
+    'vectorDbReadFileError': 'Error reading file: {error}',
     'quickActionsSettings': 'Quick Actions Settings',
     'quickActionsDescription': 'Quick actions allow you to quickly execute preset AI commands in the main panel. You can customize action names, icons, and prompts.',
     'quickActionsManagement': 'Quick Actions Management',
@@ -920,7 +1140,7 @@ Format：
     'importMerge': 'Merge (keep existing actions)',
     'importReplace': 'Replace (remove existing actions)',
     'import': 'Import',
-    'importSuccess': 'Successfully imported {count} quick actions',
+    'importSuccess': 'Successfully imported {count} custom options',
     'importNoActions': 'No actions imported',
     'importProcessFailed': 'Import processing failed',
     'quickActionError': 'Quick action execution failed',
@@ -958,8 +1178,6 @@ Notice:
 4. You will think through CoT each time, sort out the content/structure clearly, and then start drawing.
 
 
-
-
 Format:
 
 ### I. <Title 1>
@@ -984,9 +1202,9 @@ Content to be processed:
 You are a powerful Polyglot Translator and Language Companion, designed to help an English-speaking user learn languages, with a special focus on Chinese.
 
 # Core Directive
-Analyze the user's selected text. First, determine its language and whether it's a single word or a longer phrase/sentence. Then, strictly follow the corresponding rule below. Provide the output directly, without any conversational preamble.
+Analyze the user's selected text. First, determine its language and whether it\'s a single word or a longer phrase/sentence. Then, strictly follow the corresponding rule below. Provide the output directly, without any conversational preamble.
 
----
+---\n
 
 ### Rule 1: Single English Word
 - **Condition:** The selected text is a **single English word**.
@@ -995,9 +1213,9 @@ Analyze the user's selected text. First, determine its language and whether it's
   - **Pinyin:** [Phonetic transcription]
   - **Core Meanings:** [1-3 most common definitions in English]
   - **Example Sentence:** [A practical Chinese sentence using the word, with its English translation]
-  - **Character Insight (Optional):** [Briefly explain in English the character components/radicals, cultural context, or interesting origins. e.g., for 好 (hǎo), explain it's composed of 女 (woman) and 子 (child).]
+  - **Character Insight (Optional):** [Briefly explain in English the character components/radicals, cultural context, or interesting origins. e.g., for 好 (hǎo), explain it\'s composed of 女 (woman) and 子 (child).]
 
----
+---\n
 
 ### Rule 2: English Phrase or Sentence
 - **Condition:** The selected text is an **English phrase or sentence** (multiple words).
@@ -1007,7 +1225,7 @@ Analyze the user's selected text. First, determine its language and whether it's
   - **Option 2:** [An alternative Chinese translation]
     - **Context:** [Explain how it differs from Option 1, e.g., more formal, informal, or emphasizes a different aspect.]
 
----
+---\n
 
 ### Rule 3: Single Chinese Word/Character
 - **Condition:** The selected text is a **single Chinese word or character** (e.g., 你好, 爱).
@@ -1015,9 +1233,9 @@ Analyze the user's selected text. First, determine its language and whether it's
   - **Pinyin:** [Phonetic transcription]
   - **Core Meaning:** [The primary English definition]
   - **Example Sentence:** [The Chinese word used in a simple sentence, with its English translation]
-  - **Breakdown (Optional):** [If it's a multi-character word, list the individual characters and their meanings. e.g., for 电脑 (diànnǎo), break it down into 电 (electric) + 脑 (brain).]
+  - **Breakdown (Optional):** [If it\'s a multi-character word, list the individual characters and their meanings. e.g., for 电脑 (diànnǎo), break it down into 电 (electric) + 脑 (brain).]
 
----
+---\n
 
 ### Rule 4: Chinese Phrase or Sentence
 - **Condition:** The selected text is a **Chinese phrase or sentence**.
@@ -1026,7 +1244,7 @@ Analyze the user's selected text. First, determine its language and whether it's
   - **Literal Translation (Optional):** [A word-for-word translation if it helps with understanding the structure, marked as "Literal".]
   - **Keywords / Nuances:** [Identify 1-2 key words or grammatical structures in the original Chinese and explain their meaning or function in English to aid learning.]
 
----
+---\n
 
 ### Rule 5: Any Other Language (Fallback Rule)
 - **Condition:** The selected text is **not English or Chinese**.
@@ -1034,6 +1252,83 @@ Analyze the user's selected text. First, determine its language and whether it's
   - **Identify the language** if possible (e.g., Spanish to English:).
   - **Provide a clear and accurate English translation.**
   - If the input is a single word, you may provide a brief definition or synonym to clarify its meaning.`,
+    // --- Automation & Tool Calls ---
+    'automationSettingsNav': 'Automation',
+    'automationSettingsHeading': 'Browser Automation',
+    'automationGlobalToggleLabel': 'Enable browser automation',
+    'automationGlobalToggleDesc': 'Allow the chat model to call browser automation tools',
+    'automationToolsListLabel': 'Tools',
+    'automationToolsListDesc': 'Enable or disable each tool individually',
+    'automationMaxStepsLabel': 'Max tool steps per conversation',
+    'automationMaxStepsDesc': 'Limit the maximum number of tool steps in the ReAct loop (1-30, default 8)',
+    'automationEnableAll': 'Enable All',
+    'automationDisableAll': 'Disable All',
+    'automationToggleOn': 'Browser Automation: On',
+    'automationToggleOff': 'Browser Automation: Off',
+    // Claude Agent SDK Configuration
+    'agentSdkConfigLabel': 'Claude Agent SDK Configuration',
+    'agentSdkConfigDesc': 'Configure AI Agent API endpoint and authentication',
+    'agentSdkEndpointLabel': 'API Endpoint URL:',
+    'agentSdkEndpointPlaceholder': 'https://api.anthropic.com',
+    'agentSdkEndpointDesc': 'Leave empty for default Anthropic API, custom for proxy or third-party',
+    'agentSdkApiKeyLabel': 'API Key:',
+    'agentSdkApiKeyPlaceholder': 'sk-ant-...',
+    'agentSdkApiKeyDesc': 'Anthropic API Key for authentication',
+    'agentSdkModelLabel': 'Model:',
+    'agentSdkModelPlaceholder': 'claude-sonnet-4-5',
+    'agentSdkModelDesc': 'Enter model name, e.g., claude-sonnet-4-5, claude-opus-4-5, etc.',
+    'agentSdkPermissionLabel': 'Permission Mode:',
+    'agentSdkPermissionDesc': 'Control automation operation permission level',
+    'agentSdkPermissionDefault': 'Default (confirm each request)',
+    'agentSdkPermissionEdits': 'Auto-approve edits',
+    'agentSdkPermissionBypass': 'Skip all permission checks',
+    'agentSdkSave': 'Save Configuration',
+    'agentSdkTest': 'Test Connection',
+    'agentSdkSaved': 'Configuration saved',
+    'agentSdkTesting': 'Testing connection...',
+    'agentSdkTestSuccess': 'Connection successful!',
+    'agentSdkTestFailed': 'Connection failed',
+    'agentSdkTestAuthFailed': 'Authentication failed, please check API Key',
+    'agentSdkTestError': 'Connection error',
+    'agentSdkApiKeyMissing': 'Please configure Claude Agent SDK API Key first',
+    'agentSdkError': 'Automation error',
+    'toolUse': 'Using Tool',
+    'toolName': 'Tool Name',
+    'toolParameters': 'Tool Parameters',
+    'toolResult': 'Tool Result',
+    'copyParameters': 'Copy Parameters',
+    'copyResult': 'Copy Result',
+    'collapseResult': 'Collapse Result',
+    'expandResult': 'Expand Result',
+    'retryStep': 'Retry Step',
+    'tool_get_all_tabs_description': 'Get a list of all open tabs in the browser.',
+    'tool_get_current_tab_description': 'Get the details of the currently active tab.',
+    'tool_switch_to_tab_description': 'Switch to a specific tab by its ID.',
+    'tool_close_tab_description': 'Close a tab by its ID.',
+    'tool_open_url_description': 'Open a new tab with a specified URL.',
+    'tool_reload_tab_description': 'Reload the current active tab or a specific tab by ID.',
+    'tool_get_page_text_description': 'Extract the visible text content from the current page.',
+    'tool_get_interactive_elements_description': 'Get a list of all interactive elements on the current page, such as buttons, links, and inputs.',
+    'tool_click_description': 'Click an element on the current page.',
+    'tool_fill_description': 'Fill an input field with text.',
+    'tool_clear_description': 'Clear the value of an input field.',
+    'tool_get_value_description': 'Get the value of an input field.',
+    'tool_scroll_into_view_description': 'Scroll an element into the visible area of the browser window.',
+    'tool_hover_description': 'Hover over an element on the current page.',
+    'tool_highlight_description': 'Highlight an element on the page to make it visually stand out.',
+    'tool_search_page_text_description': 'Search for a specific text query on the current page.',
+    'tool_get_page_links_description': 'Get all the links on the current page.',
+    'tool_get_page_images_description': 'Get all the images on the current page.',
+    'tool_find_element_description': 'Find a specific element on the page by CSS selector, text, or role.',
+    'tool_submit_description': 'Submit a form. If no element is specified, it tries to find the closest form to the last interacted element.',
+    'tool_go_back_description': 'Navigate back in history on the current page.',
+    'tool_go_forward_description': 'Navigate forward in history on the current page.',
+    'tool_select_option_description': 'Select an option in a <select> control by value or visible text.',
+    'tool_wait_for_selector_description': 'Wait for a CSS selector to appear in the DOM.',
+    'tool_screenshot_description': 'Capture a user-selected area of the current tab and return a PNG dataUrl plus page metadata.',
+    'tool_navigate_description': 'Navigate the current tab to the given URL (no new tab).',
+    'tool_wait_for_navigation_description': 'Wait until the specified tab completes a navigation or until timeout.',
+    'tool_sleep_description': 'Wait for the specified milliseconds before continuing.'
   }
   };
 }
@@ -1078,6 +1373,15 @@ function isDefaultPrompt(prompt, type) {
 
 // 导出函数供其他模块使用
 if (typeof window !== 'undefined') {
+  if (window.translations?.['zh-CN']) {
+    window.translations['zh-CN'].agentSdkConfigLabel = 'Agent 配置';
+  }
+  if (window.translations?.en) {
+    window.translations.en.agentSdkConfigLabel = 'Agent Configuration';
+  }
   window.getDefaultPrompt = getDefaultPrompt;
   window.isDefaultPrompt = isDefaultPrompt;
 }
+
+
+null;;

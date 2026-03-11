@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Text Selection Helper Settings Module
+ * Infinpilot - Text Selection Helper Settings Module
  * 划词助手设置管理模块
  */
 
@@ -85,16 +85,16 @@ let currentSettings = { ...DEFAULT_SETTINGS };
  */
 async function migrateDataFromSyncToLocal() {
     return new Promise((resolve) => {
-        if (!chrome || !chrome.storage || !chrome.storage.sync || !chrome.storage.local) {
+        if (!chrome || !browser.storage || !browser.storage.sync || !browser.storage.local) {
             console.warn('[TextSelectionHelperSettings] Chrome storage API not available for migration');
             resolve();
             return;
         }
 
         // 检查是否已经完成迁移（使用版本标记）
-        chrome.storage.local.get(['textSelectionHelperSettingsVersion'], (versionResult) => {
-            if (chrome.runtime.lastError) {
-                console.error('[TextSelectionHelperSettings] Error checking migration version:', chrome.runtime.lastError);
+        browser.storage.local.get(['textSelectionHelperSettingsVersion'], (versionResult) => {
+            if (browser.runtime.lastError) {
+                console.error('[TextSelectionHelperSettings] Error checking migration version:', browser.runtime.lastError);
                 resolve();
                 return;
             }
@@ -109,11 +109,11 @@ async function migrateDataFromSyncToLocal() {
             console.log('[TextSelectionHelperSettings] No migration version found, checking for data to migrate...');
 
             // 从sync存储中获取数据
-            chrome.storage.sync.get(['textSelectionHelperSettings'], (syncResult) => {
-                if (chrome.runtime.lastError) {
-                    console.error('[TextSelectionHelperSettings] Error reading from sync storage:', chrome.runtime.lastError);
+            browser.storage.sync.get(['textSelectionHelperSettings'], (syncResult) => {
+                if (browser.runtime.lastError) {
+                    console.error('[TextSelectionHelperSettings] Error reading from sync storage:', browser.runtime.lastError);
                     // 即使读取失败，也要设置版本标记，避免重复尝试
-                    chrome.storage.local.set({ textSelectionHelperSettingsVersion: '1.0' }, () => {
+                    browser.storage.local.set({ textSelectionHelperSettingsVersion: '1.0' }, () => {
                         resolve();
                     });
                     return;
@@ -122,19 +122,19 @@ async function migrateDataFromSyncToLocal() {
                 // 如果sync存储中有数据，迁移到local存储
                 if (syncResult.textSelectionHelperSettings) {
                     console.log('[TextSelectionHelperSettings] Found data in sync storage, migrating to local storage...');
-                    chrome.storage.local.set({
+                    browser.storage.local.set({
                         textSelectionHelperSettings: syncResult.textSelectionHelperSettings,
                         textSelectionHelperSettingsVersion: '1.0'
                     }, () => {
-                        if (chrome.runtime.lastError) {
-                            console.error('[TextSelectionHelperSettings] Error migrating to local storage:', chrome.runtime.lastError);
+                        if (browser.runtime.lastError) {
+                            console.error('[TextSelectionHelperSettings] Error migrating to local storage:', browser.runtime.lastError);
                             resolve();
                         } else {
                             console.log('[TextSelectionHelperSettings] Data successfully migrated to local storage');
                             // 清除sync存储中的数据，避免未来的潜在冲突
-                            chrome.storage.sync.remove(['textSelectionHelperSettings'], () => {
-                                if (chrome.runtime.lastError) {
-                                    console.warn('[TextSelectionHelperSettings] Warning: Could not remove data from sync storage:', chrome.runtime.lastError);
+                            browser.storage.sync.remove(['textSelectionHelperSettings'], () => {
+                                if (browser.runtime.lastError) {
+                                    console.warn('[TextSelectionHelperSettings] Warning: Could not remove data from sync storage:', browser.runtime.lastError);
                                 } else {
                                     console.log('[TextSelectionHelperSettings] Data removed from sync storage');
                                 }
@@ -145,9 +145,9 @@ async function migrateDataFromSyncToLocal() {
                 } else {
                     console.log('[TextSelectionHelperSettings] No data found in sync storage to migrate');
                     // 即使没有数据需要迁移，也要设置版本标记，避免重复检查
-                    chrome.storage.local.set({ textSelectionHelperSettingsVersion: '1.0' }, () => {
-                        if (chrome.runtime.lastError) {
-                            console.error('[TextSelectionHelperSettings] Error setting migration version:', chrome.runtime.lastError);
+                    browser.storage.local.set({ textSelectionHelperSettingsVersion: '1.0' }, () => {
+                        if (browser.runtime.lastError) {
+                            console.error('[TextSelectionHelperSettings] Error setting migration version:', browser.runtime.lastError);
                         } else {
                             console.log('[TextSelectionHelperSettings] Migration version set, no data to migrate');
                         }
@@ -194,7 +194,7 @@ export async function initTextSelectionHelperSettings(elements, translations, sh
 function loadSettings() {
     return new Promise((resolve) => {
         // 检查Chrome存储API是否可用
-        if (!chrome || !chrome.storage || !chrome.storage.local) {
+        if (!chrome || !browser.storage || !browser.storage.local) {
             console.warn('[TextSelectionHelperSettings] Chrome storage API not available, using default settings');
             currentSettings = { ...DEFAULT_SETTINGS };
             resolve();
@@ -203,18 +203,18 @@ function loadSettings() {
 
         try {
             // 获取语言设置（仍从sync获取）和划词助手设置（从local获取）
-            chrome.storage.sync.get(['language'], (syncResult) => {
-                if (chrome.runtime.lastError) {
-                    console.error('[TextSelectionHelperSettings] Error loading language from sync:', chrome.runtime.lastError);
+            browser.storage.sync.get(['language'], (syncResult) => {
+                if (browser.runtime.lastError) {
+                    console.error('[TextSelectionHelperSettings] Error loading language from sync:', browser.runtime.lastError);
                 }
 
                 const currentLanguage = syncResult.language || 'zh-CN';
                 const dynamicDefaults = getDefaultSettings(currentLanguage);
 
                 // 从本地存储获取划词助手设置
-                chrome.storage.local.get(['textSelectionHelperSettings'], (localResult) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('[TextSelectionHelperSettings] Error loading settings from local:', chrome.runtime.lastError);
+                browser.storage.local.get(['textSelectionHelperSettings'], (localResult) => {
+                    if (browser.runtime.lastError) {
+                        console.error('[TextSelectionHelperSettings] Error loading settings from local:', browser.runtime.lastError);
                         currentSettings = { ...dynamicDefaults };
                     } else {
                         if (localResult.textSelectionHelperSettings) {
@@ -296,8 +296,8 @@ function loadSettings() {
  */
 function getCurrentLanguageForSettings() {
     return new Promise((resolve) => {
-        if (chrome && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.get(['language'], (result) => {
+        if (chrome && browser.storage && browser.storage.sync) {
+            browser.storage.sync.get(['language'], (result) => {
                 resolve(result.language || 'zh-CN');
             });
         } else {
@@ -311,8 +311,8 @@ function getCurrentLanguageForSettings() {
  */
 function setupLanguageChangeListener() {
     // 监听Chrome存储变化
-    if (chrome && chrome.storage && chrome.storage.onChanged) {
-        chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (chrome && browser.storage && browser.storage.onChanged) {
+        browser.storage.onChanged.addListener((changes, namespace) => {
             // 监听语言变化（仍在sync存储中）
             if (namespace === 'sync' && changes.language) {
                 const newLanguage = changes.language.newValue;
@@ -424,7 +424,7 @@ function updateDefaultPromptsForLanguage(language) {
  */
 function saveSettings() {
     // 检查Chrome存储API是否可用
-    if (!chrome || !chrome.storage || !chrome.storage.local) {
+    if (!chrome || !browser.storage || !browser.storage.local) {
         console.warn('[TextSelectionHelperSettings] Chrome storage API not available, cannot save settings');
         return;
     }
@@ -433,9 +433,9 @@ function saveSettings() {
     const settingsToSave = { ...currentSettings };
 
     try {
-        chrome.storage.local.set({ textSelectionHelperSettings: settingsToSave }, () => {
-            if (chrome.runtime.lastError) {
-                console.error('[TextSelectionHelperSettings] Error saving settings:', chrome.runtime.lastError);
+        browser.storage.local.set({ textSelectionHelperSettings: settingsToSave }, () => {
+            if (browser.runtime.lastError) {
+                console.error('[TextSelectionHelperSettings] Error saving settings:', browser.runtime.lastError);
             } else {
                 console.log('[TextSelectionHelperSettings] Settings saved to local storage');
             }
@@ -472,12 +472,17 @@ async function getModelOptions() {
     try {
         // 尝试通过消息传递获取模型列表
         const response = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ action: 'getAvailableModels' }, (response) => {
-                resolve(response);
+            browser.runtime.sendMessage({ action: 'getAvailableModels' }, (msg) => {
+                // Handle cases where the extension context is invalidated
+                if (browser.runtime.lastError) {
+                    resolve({ success: false, error: browser.runtime.lastError.message });
+                } else {
+                    resolve(msg);
+                }
             });
         });
 
-        if (response && response.models && response.models.length > 0) {
+        if (response && response.success && Array.isArray(response.models) && response.models.length > 0) {
             // 检查是否是新格式（包含提供商信息）
             if (typeof response.models[0] === 'object' && response.models[0].value) {
                 // 新格式：包含提供商信息的对象数组，保持原始格式用于分组
@@ -495,10 +500,21 @@ async function getModelOptions() {
                 return modelOptions;
             }
         } else {
-            throw new Error('No models received from background');
+            // This is not an error, just a state where no models are configured or the background script failed gracefully.
+            // We will use the fallback options.
+            if (response && !response.success) {
+                console.log(`[TextSelectionHelperSettings] Did not receive models from background (reason: ${response.error || 'unknown'}), using fallback.`);
+            } else {
+                console.log('[TextSelectionHelperSettings] No models configured in background, using fallback.');
+            }
+            return [
+                { value: 'google::gemini-2.5-flash', text: 'gemini-2.5-flash', providerId: 'google', providerName: 'Google' },
+                { value: 'google::gemini-2.5-flash-thinking', text: 'gemini-2.5-flash-thinking', providerId: 'google', providerName: 'Google' },
+                { value: 'google::gemini-2.5-flash-lite', text: 'gemini-2.5-flash-lite', providerId: 'google', providerName: 'Google' }
+            ];
         }
     } catch (error) {
-        console.warn('[TextSelectionHelperSettings] Failed to get models from background, using fallback:', error);
+        console.warn('[TextSelectionHelperSettings] Failed to get models from background due to an exception, using fallback:', error);
         // 回退到基本选项
         return [
             { value: 'google::gemini-2.5-flash', text: 'gemini-2.5-flash', providerId: 'google', providerName: 'Google' },
@@ -1509,11 +1525,11 @@ function setupDialogLanguageChangeListener(dialog, option) {
     };
 
     // 添加事件监听器
-    document.addEventListener('pagetalk:languageChanged', handleLanguageChange);
+    document.addEventListener('infinpilot:languageChanged', handleLanguageChange);
 
     // 在对话框关闭时清理事件监听器
     const cleanupListener = () => {
-        document.removeEventListener('pagetalk:languageChanged', handleLanguageChange);
+        document.removeEventListener('infinpilot:languageChanged', handleLanguageChange);
         console.log('[TextSelectionHelperSettings] Dialog language change listener cleaned up');
     };
 
@@ -2133,7 +2149,7 @@ function handleCustomOptionsExport(translations) {
 
         const link = document.createElement('a');
         link.href = url;
-        link.download = `pagetalk-custom-options-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `infinpilot-custom-options-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2706,8 +2722,8 @@ async function initIconPreview(dialog, iconName = 'star') {
 }
 
 // 监听模型更新事件
-if (chrome && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+if (chrome && browser.runtime && browser.runtime.onMessage) {
+    browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'modelsUpdated') {
             console.log('[TextSelectionHelperSettings] Models updated, refreshing model selectors...');
             refreshModelSelectors();

@@ -1,9 +1,12 @@
 /**
- * Pagetalk - Settings Management Functions (Model, General)
+ * Infinpilot - Settings Management Functions (Model, General)
  */
+import vectorDB from './vectorDB.js';
 import { generateUniqueId } from './utils.js'; // Might need utils later
 import * as QuickActionsManager from './quick-actions-manager.js';
 import { tr as _, getCurrentTranslations } from './utils/i18n.js';
+import toolCatalog from './automation/toolCatalog.js';
+import { runtimeFetch } from './utils/runtimeFetch.js';
 
 
 /**
@@ -41,12 +44,15 @@ function detectUserLanguage() {
  * @param {function} applyThemeCallback - Callback
  */
 export function loadSettings(state, elements, updateConnectionIndicatorCallback, loadAndApplyTranslationsCallback, applyThemeCallback) {
+    // Setup Automation Settings UI bindings after DOM is ready
+    try { setupAutomationSettingsUI(state, elements); } catch (_) {}
+
     // 设置全局变量以便动态创建的按钮可以访问
     window.settingsState = state;
     window.settingsElements = elements;
 
     // 监听语言变化事件，更新动态创建的UI元素
-    document.addEventListener('pagetalk:languageChanged', (event) => {
+    document.addEventListener('infinpilot:languageChanged', (event) => {
         console.log('[Settings] Received language change event:', event.detail);
         const newLanguage = event.detail.newLanguage;
 
@@ -57,7 +63,10 @@ export function loadSettings(state, elements, updateConnectionIndicatorCallback,
         console.log('[Settings] Updated manual add button for language:', newLanguage);
     });
 
-    chrome.storage.sync.get(['apiKey', 'model', 'language', 'proxyAddress', 'providerSettings'], async (syncResult) => {
+    Promise.all([
+        browser.storage.sync.get(['apiKey', 'model', 'language', 'proxyAddress', 'providerSettings', 'userName']),
+        browser.storage.local.get(['userAvatar'])
+    ]).then(async ([syncResult, localResult]) => {
         // 初始化 ModelManager
         if (window.ModelManager?.instance) {
             try {
@@ -107,7 +116,7 @@ export function loadSettings(state, elements, updateConnectionIndicatorCallback,
             // 如果用户没有设置语言，自动检测并设置
             state.language = detectUserLanguage();
             // 保存检测到的语言设置
-            chrome.storage.sync.set({ language: state.language });
+            browser.storage.sync.set({ language: state.language });
         }
 
         if (elements.languageSelect) elements.languageSelect.value = state.language;
@@ -121,13 +130,46 @@ export function loadSettings(state, elements, updateConnectionIndicatorCallback,
         }
         if (elements.proxyAddressInput) elements.proxyAddressInput.value = state.proxyAddress;
 
+        // User Profile
+        if (syncResult.userName) {
+            state.userName = syncResult.userName;
+        } else {
+            state.userName = '';
+        }
+        if (elements.userNameInput) elements.userNameInput.value = state.userName;
+
+        if (localResult.userAvatar) {
+            state.userAvatar = localResult.userAvatar;
+        } else {
+            state.userAvatar = '';
+        }
+        // Note: we don't set the value of the userAvatarInput here as it is a file input
+
         // Theme (Load default, content script might override)
-        state.darkMode = false; // Default to light
-        applyThemeCallback(state.darkMode); // Apply default
+        // 不再在这里设置默认主题，而是在 main.js 中从 localStorage 加载
+        // state.darkMode = false; // Default to light
+        applyThemeCallback(state.darkMode); // Apply current theme from state
 
         // Connection Status (检查是否有任何供应商配置了 API Key)
         state.isConnected = await checkAnyProviderConnected();
         updateConnectionIndicatorCallback(); // Update footer indicator
+
+        // Initialize Vector DB Settings
+        initializeVectorDbSettings(state, elements, window.showToastUI, getCurrentTranslations);
+
+        // Initialize User Account UI
+        initUserAccount();
+
+        // Initialize Editor Appearance Settings
+        initEditorAppearanceSettings();
+        initMcpSettingsRuntime();
+
+        if (elements.userNameInput) {
+            elements.userNameInput.addEventListener('change', () => handleUserProfileChange(state, elements, window.showToastUI, getCurrentTranslations()));
+        }
+        if (elements.userAvatarInput) {
+            elements.userAvatarInput.addEventListener('change', () => handleUserProfileChange(state, elements, window.showToastUI, getCurrentTranslations()));
+        }
     });
 }
 
@@ -156,17 +198,17 @@ export async function saveModelSettings(showToastNotification = true, state, ele
     let testResult;
     try {
         // 使用新的统一 API 测试接口
-        testResult = await window.PageTalkAPI.testApiKey('google', apiKey, model);
+        testResult = await window.InfinPilotAPI.testApiKey('google', apiKey, model);
 
         if (testResult.success) {
             state.apiKey = apiKey;
             state.model = model;
             state.isConnected = true;
 
-            chrome.storage.sync.set({ apiKey: state.apiKey, model: state.model }, async () => {
-                if (chrome.runtime.lastError) {
-                    console.error("Error saving model settings:", chrome.runtime.lastError);
-                    showToastCallback(_('saveFailedToast', { error: chrome.runtime.lastError.message }, currentTranslations), 'error'); // Changed to showToastCallback
+            browser.storage.sync.set({ apiKey: state.apiKey, model: state.model }, async () => {
+                if (browser.runtime.lastError) {
+                    console.error("Error saving model settings:", browser.runtime.lastError);
+                    showToastCallback(_('saveFailedToast', { error: browser.runtime.lastError.message }, currentTranslations), 'error'); // Changed to showToastCallback
                     state.isConnected = false; // Revert status
                     state.hasDeterminedConnection = true;
                 } else {
@@ -215,10 +257,10 @@ export function handleLanguageChange(state, elements, loadAndApplyTranslationsCa
     const selectedLanguage = elements.languageSelect.value;
     state.language = selectedLanguage; // Update state immediately
 
-    chrome.storage.sync.set({ language: selectedLanguage }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving language:", chrome.runtime.lastError);
-            showToastCallback(_('saveFailedToast', { error: chrome.runtime.lastError.message }, currentTranslations), 'error'); // Use old translations for error
+    browser.storage.sync.set({ language: selectedLanguage }, () => {
+        if (browser.runtime.lastError) {
+            console.error("Error saving language:", browser.runtime.lastError);
+            showToastCallback(_('saveFailedToast', { error: browser.runtime.lastError.message }, currentTranslations), 'error'); // Use old translations for error
         } else {
             console.log(`Language saved: ${selectedLanguage}`);
             loadAndApplyTranslationsCallback(selectedLanguage); // Load and apply NEW translations
@@ -284,10 +326,10 @@ export function handleProxyAddressChange(state, elements, showToastCallback, cur
     state.proxyAddress = proxyAddress;
 
     // Save to storage
-    chrome.storage.sync.set({ proxyAddress: proxyAddress }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving proxy url:", chrome.runtime.lastError);
-            showToastCallback(_('saveFailedToast', { error: chrome.runtime.lastError.message }, currentTranslations), 'error');
+    browser.storage.sync.set({ proxyAddress: proxyAddress }, () => {
+        if (browser.runtime.lastError) {
+            console.error("Error saving proxy url:", browser.runtime.lastError);
+            showToastCallback(_('saveFailedToast', { error: browser.runtime.lastError.message }, currentTranslations), 'error');
         } else {
             console.log(`Proxy address saved: ${proxyAddress || '(empty)'}`);
             if (proxyAddress) {
@@ -328,7 +370,7 @@ export function handleProxyTest(state, elements, showToastCallback, currentTrans
     testBtn.textContent = _('testingConnection', {}, currentTranslations);
 
     // 发送测试请求到background.js
-    chrome.runtime.sendMessage({
+    browser.runtime.sendMessage({
         action: 'testProxy',
         proxyAddress: proxyAddress
     }, (response) => {
@@ -336,9 +378,9 @@ export function handleProxyTest(state, elements, showToastCallback, currentTrans
         testBtn.disabled = false;
         testBtn.textContent = originalText;
 
-        if (chrome.runtime.lastError) {
-            console.error('Error testing proxy:', chrome.runtime.lastError);
-            showToastCallback(_('proxySetError', { error: chrome.runtime.lastError.message }, currentTranslations), 'error');
+        if (browser.runtime.lastError) {
+            console.error('Error testing proxy:', browser.runtime.lastError);
+            showToastCallback(_('proxySetError', { error: browser.runtime.lastError.message }, currentTranslations), 'error');
             return;
         }
 
@@ -362,7 +404,7 @@ export function handleExportChat(state, elements, showToastCallback, currentTran
     const format = elements.exportFormatSelect.value;
     let content = '';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    let filename = `pagetalk_chat_${timestamp}`;
+    let filename = `infinpilot_chat_${timestamp}`;
 
     if (format === 'markdown') {
         filename += '.md';
@@ -412,7 +454,9 @@ function exportChatToMarkdown(state, currentTranslations) {
     if (typeof dayjs !== 'undefined') dayjs.locale(locale);
     const timestamp = typeof dayjs !== 'undefined' ? dayjs().format('YYYY-MM-DD HH:mm:ss') : new Date().toLocaleString();
 
-    let markdown = `# ${_tr('appName')} ${_tr('chatTab')} History (${timestamp})\n\n`;
+    let markdown = `# ${_tr('appName')} ${_tr('chatTab')} History (${timestamp})
+
+`;
 
     state.chatHistory.forEach(message => {
         const { text, images } = extractPartsFromMessage(message); // Use helper
@@ -1633,13 +1677,6 @@ async function loadProviderSettingsToUI(elements) {
         if (apiKeyInput && apiKey) {
             apiKeyInput.value = apiKey;
         }
-
-        // 加载 Base URL 覆盖（如果已设置）
-        const apiHostOverride = modelManager.getProviderApiHost(providerId);
-        const apiHostInput = document.getElementById(`${providerId}-api-host`);
-        if (apiHostInput) {
-            apiHostInput.value = apiHostOverride || '';
-        }
     }
 }
 
@@ -1720,40 +1757,6 @@ export function setupProviderEventListeners(state, elements, showToastCallback, 
                 }
             }
         }
-        
-        // Base URL 覆盖输入事件
-        if (e.target.matches('[id$="-api-host"]')) {
-            const input = e.target;
-            const providerId = input.id.replace('-api-host', '');
-            const raw = input.value.trim();
-
-            // 空值表示使用默认，直接清除覆盖
-            if (!raw) {
-                input.classList.remove('error');
-                if (window.ModelManager?.instance) {
-                    await window.ModelManager.instance.setProviderApiHost(providerId, '');
-                }
-                return;
-            }
-
-            // 校验 URL 格式
-            try {
-                // 允许 http/https，自然校验格式
-                new URL(raw);
-                input.classList.remove('error');
-            } catch (_) {
-                input.classList.add('error');
-                const currentTranslations = getCurrentTranslations();
-                if (window.showToastUI) {
-                    window.showToastUI(currentTranslations.providerBaseUrlInvalidUrl || 'Invalid Base URL format', 'error');
-                }
-                return;
-            }
-
-            if (window.ModelManager?.instance) {
-                await window.ModelManager.instance.setProviderApiHost(providerId, raw.replace(/\/$/, ''));
-            }
-        }
     }, true); // 使用捕获阶段
 
     // 测试连接按钮 - 使用事件委托
@@ -1781,7 +1784,7 @@ export function setupProviderEventListeners(state, elements, showToastCallback, 
 async function handleTestApiKey(providerId, showToastCallback) {
     const currentTranslations = getCurrentTranslations();
 
-    if (!window.PageTalkAPI?.testApiKey) {
+    if (!window.InfinPilotAPI?.testApiKey) {
         showToastCallback(_('modelManagerUnavailable', {}, currentTranslations), 'error');
         return;
     }
@@ -1811,7 +1814,7 @@ async function handleTestApiKey(providerId, showToastCallback) {
         testButton.disabled = true;
         testButton.textContent = _('testingConnection', {}, currentTranslations);
 
-        const result = await window.PageTalkAPI.testApiKey(providerId, apiKey);
+        const result = await window.InfinPilotAPI.testApiKey(providerId, apiKey);
 
         if (result.success) {
             showToastCallback(result.message, 'success');
@@ -1861,7 +1864,7 @@ async function autoDiscoverModelsAfterTest(providerId, showToastCallback) {
         console.log(`[Settings] No existing Google models found, proceeding with auto-discovery`);
 
         // 获取Gemini可用模型
-        const discoveredModels = await window.PageTalkAPI.fetchModels('google');
+        const discoveredModels = await window.InfinPilotAPI.fetchModels('google');
 
         if (!discoveredModels || discoveredModels.length === 0) {
             console.log(`[Settings] No Gemini models discovered`);
@@ -1901,7 +1904,7 @@ async function autoDiscoverModelsAfterTest(providerId, showToastCallback) {
 async function handleDiscoverModelsForProvider(providerId, state, elements, showToastCallback, uiButton = null) {
     const currentTranslations = getCurrentTranslations();
 
-    if (!window.PageTalkAPI?.fetchModels) {
+    if (!window.InfinPilotAPI?.fetchModels) {
         showToastCallback(_('modelManagerUnavailable', {}, currentTranslations), 'error');
         return;
     }
@@ -1937,7 +1940,7 @@ async function handleDiscoverModelsForProvider(providerId, state, elements, show
         }
 
         // 获取可用模型
-        const discoveredModels = await window.PageTalkAPI.fetchModels(providerId);
+        const discoveredModels = await window.InfinPilotAPI.fetchModels(providerId);
 
         if (!discoveredModels || discoveredModels.length === 0) {
             showToastCallback(_('noNewModelsFound', {}, currentTranslations), 'info');
@@ -2065,7 +2068,7 @@ function showManualAddModelDialog(currentTranslations) {
     // 关闭对话框函数
     const closeDialog = () => {
         // 移除语言变化监听器
-        document.removeEventListener('pagetalk:languageChanged', handleDialogLanguageChange);
+        document.removeEventListener('infinpilot:languageChanged', handleDialogLanguageChange);
         dialog.remove();
     };
 
@@ -2080,7 +2083,7 @@ function showManualAddModelDialog(currentTranslations) {
     };
 
     // 添加语言变化监听器
-    document.addEventListener('pagetalk:languageChanged', handleDialogLanguageChange);
+    document.addEventListener('infinpilot:languageChanged', handleDialogLanguageChange);
 
     // 添加事件监听器
     closeBtn.addEventListener('click', closeDialog);
@@ -2716,16 +2719,16 @@ function createProviderSettingsElement(provider) {
                     <!-- 选项由 JS 填充 -->
                 </select>
                 ${provider.isCustom ? `
-                    <button class=\"edit-custom-provider-btn\" data-provider=\"${provider.id}\" title=\"${currentTranslations.customProviderEdit || '编辑提供商'}\">
-                        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" fill=\"currentColor\" viewBox=\"0 0 16 16\">
-                            <path d=\"M5.707 13.707a1 1 0 0 1-.39.242l-3 1a1 1 0 0 1-1.266-1.265l1-3a1 1 0 0 1 .242-.391L10.086 2.5a2 2 0 0 1 2.828 0l.586.586a2 2 0 0 1 0 2.828L5.707 13.707zM3 11l7.5-7.5 1 1L4 12l-1-1zm0 2.5l1-1L5.5 14l-1 1-1.5-1.5z\"/>
-                            <path d=\"M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z\"/>
+                    <button class="edit-custom-provider-btn" data-provider="${provider.id}" title="${currentTranslations.customProviderEdit || '编辑提供商'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.707 13.707a1 1 0 0 1-.39.242l-3 1a1 1 0 0 1-1.266-1.265l1-3a1 1 0 0 1 .242-.391L10.086 2.5a2 2 0 0 1 2.828 0l.586.586a2 2 0 0 1 0 2.828L5.707 13.707zM3 11l7.5-7.5 1 1L4 12l-1-1zm0 2.5l1-1L5.5 14l-1 1-1.5-1.5z"/>
+                            <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
                         </svg>
                     </button>
-                    <button class=\"remove-custom-provider-btn\" data-provider=\"${provider.id}\" title=\"${currentTranslations.customProviderDelete || '删除提供商'}\">
-                        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\">
-                            <path d=\"M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z\"/>
-                            <path fill-rule=\"evenodd\" d=\"M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z\"/>
+                    <button class="remove-custom-provider-btn" data-provider="${provider.id}" title="${currentTranslations.customProviderDelete || '删除提供商'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                         </svg>
                     </button>
                 ` : ''}
@@ -2739,32 +2742,27 @@ function createProviderSettingsElement(provider) {
         </div>
         <div class="setting-group">
             <label for="${provider.id}-api-key">API Key:</label>
-            <div class="api-key-row"><div class="api-key-input-container" style="flex:1;">
-                <input type="password" id="${provider.id}-api-key" data-i18n-placeholder="providerApiKeyPlaceholder" placeholder="${currentTranslations.providerApiKeyPlaceholder}">
-                <button class="toggle-api-key-button" type="button" data-target="${provider.id}-api-key">
-                    <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.1 13.1 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.1 13.1 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.1 13.1 0 0 1 1.172 8z"/>
-                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                    </svg>
-                    <svg class="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="display: none;">
-                        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
-                        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
-                        <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
-                    </svg>
-                </button>
-            </div><button class="test-api-key-btn" data-provider="${provider.id}" data-i18n="testConnection">${currentTranslations.testConnection}</button></div>
+                        <div class="api-key-row">
+                <div class="api-key-input-wrapper">
+                    <input type="password" id="${provider.id}-api-key" data-i18n-placeholder="providerApiKeyPlaceholder" placeholder="${currentTranslations.providerApiKeyPlaceholder}">
+                    <button class="toggle-api-key-button" type="button" data-target="${provider.id}-api-key">
+                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.1 13.1 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.1 13.1 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.1 13.1 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                        </svg>
+                        <svg class="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="display: none;">
+                            <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+                            <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+                            <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
+                        </svg>
+                    </button>
+                </div>
+                <button class="test-api-key-btn" data-provider="${provider.id}" data-i18n="testConnection">${currentTranslations.testConnection}</button>
+            </div>
             ${provider.apiKeyUrl ? `<p class="hint"><span data-i18n="getApiKeyHint">获取 API Key</span>: <a href="${provider.apiKeyUrl}" target="_blank" rel="noopener">${getProviderApiKeyLinkText(provider)}</a></p>` : ''}
+            ${provider.isCustom && provider.apiHost ? `<p class="hint">Base URL: ${provider.apiHost}</p>` : ''}
         </div>
-
-        ${provider.isCustom
-            ? (provider.apiHost ? `<p class=\"hint\">Base URL: ${provider.apiHost}</p>` : '')
-            : `
-        <div class=\"setting-group\"> 
-            <label for=\"${provider.id}-api-host\" data-i18n=\"providerBaseUrlLabel\">${currentTranslations.providerBaseUrlLabel || 'Base URL (optional)'}</label>
-            <input type=\"text\" id=\"${provider.id}-api-host\" style=\"border: 1px solid #4774ff8f;\"
-                   placeholder=\"${(currentTranslations.providerBaseUrlPlaceholder || 'Leave empty to use default: {url}').replace('{url}', provider.apiHost)}\">
-        </div>`}
-        
+            
     `;
 
     // 注意：不在这里添加API Key切换按钮的事件监听器，因为已经通过事件委托在 setupProviderEventListeners 中处理了
@@ -2981,55 +2979,67 @@ function createQuickActionElement(action, translations) {
     element.className = 'quick-action-item';
     element.dataset.actionId = action.id;
 
+    const pinTitle = action.pinned ? (translations?.unpinAction || '取消固定') : (translations?.pinAction || '固定到输入框');
+
     element.innerHTML = `
-        <div class="quick-action-header">
-            <div class="quick-action-info">
-                <div class="quick-action-name">${escapeHtml(action.name)}</div>
-            </div>
-            <div class="quick-action-actions">
-                <button class="edit-quick-action-btn" title="${translations?.editAction || '编辑'}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                </button>
-                <button class="delete-quick-action-btn" title="${translations?.deleteAction || '删除'}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3,6 5,6 21,6"/>
-                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                        <line x1="10" y1="11" x2="10" y2="17"/>
-                        <line x1="14" y1="11" x2="14" y2="17"/>
-                    </svg>
-                </button>
-            </div>
+        <div class="quick-action-main">
+            <div class="quick-action-name">${escapeHtml(action.name)}</div>
+            <div class="quick-action-prompt">${escapeHtml(action.prompt.substring(0, 100))}${action.prompt.length > 100 ? '...' : ''}</div>
         </div>
-        <div class="quick-action-details">
-            <div class="quick-action-detail">
-                <div class="quick-action-detail-label">${translations?.prompt || '提示词'}</div>
-                <div class="quick-action-detail-value">${escapeHtml(action.prompt.substring(0, 100))}${action.prompt.length > 100 ? '...' : ''}</div>
-            </div>
-            <div class="quick-action-detail">
-                <div class="quick-action-detail-label">${translations?.ignoreAssistant || '忽略助手'}</div>
-                <div class="quick-action-detail-value">${action.ignoreAssistant ? (translations?.yes || '是') : (translations?.no || '否')}</div>
-            </div>
+        <div class="quick-action-controls">
+            <button class="icon-btn pin-quick-action-btn ${action.pinned ? 'pinned' : ''}" title="${pinTitle}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="pin-icon" viewBox="0 0 16 16">
+                    <path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5c0 .276-.224.5-.5.5s-.5-.224-.5-.5V10h-4a.5.5 0 0 1-.5-.5c0-.973.64-1.725 1.17-2.176A4.502 4.502 0 0 1 5 6.931V2.5c-.104-.074-.228-.173-.354-.298C4.342 1.926 4 1.432 4 .75a.5.5 0 0 1 .146-.354z"/>
+                </svg>
+            </button>
+            <button class="icon-btn edit-quick-action-btn" title="${translations?.editAction || '编辑'}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="icon-btn delete-quick-action-btn" title="${translations?.deleteAction || '删除'}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            </button>
         </div>
     `;
 
     // 添加事件监听器
     const editBtn = element.querySelector('.edit-quick-action-btn');
     const deleteBtn = element.querySelector('.delete-quick-action-btn');
+    const pinBtn = element.querySelector('.pin-quick-action-btn');
 
     if (editBtn) {
         editBtn.addEventListener('click', () => {
-            // 点击时获取当前翻译，确保语言切换后使用最新翻译
             showQuickActionDialog(action, getCurrentTranslations());
         });
     }
 
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            // 点击时获取当前翻译，确保语言切换后使用最新翻译
             showDeleteQuickActionDialog(action, getCurrentTranslations());
+        });
+    }
+
+    if (pinBtn) {
+        pinBtn.addEventListener('click', async () => {
+            const newPinnedStatus = !action.pinned;
+            const success = await QuickActionsManager.updateQuickAction(action.id, { pinned: newPinnedStatus });
+            if (success) {
+                action.pinned = newPinnedStatus; // Update local object state
+                pinBtn.classList.toggle('pinned', newPinnedStatus);
+                pinBtn.querySelector('.pin-icon').classList.toggle('pinned', newPinnedStatus);
+                const translations = getCurrentTranslations();
+                pinBtn.title = newPinnedStatus ? (translations?.unpinAction || '取消固定') : (translations?.pinAction || '固定到输入框');
+                
+                // Dispatch event to notify UI update
+                document.dispatchEvent(new CustomEvent('infinpilot:pinnedActionsChanged'));
+            }
         });
     }
 
@@ -3284,7 +3294,7 @@ function handleQuickActionsExport(translations) {
 
         const link = document.createElement('a');
         link.href = url;
-        link.download = `pagetalk-quick-actions-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `infinpilot-quick-actions-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(link);
         link.click();
         if (link && link.parentNode) {
@@ -3466,9 +3476,1558 @@ function showImportOptionsDialog(importData, translations) {
     });
 }
 
+// === Vector DB Settings ===
+
+/**
+ * Initializes the Vector DB settings tab.
+ * @param {object} state - Global state reference
+ * @param {object} elements - DOM elements reference
+ * @param {function} showToastCallback - Callback for showing toast messages
+ * @param {function} getTranslationsCallback - Callback to get current translations
+ */
+async function initializeVectorDbSettings(state, elements, showToastCallback, getTranslationsCallback) {
+    console.log('[Settings] Initializing Vector DB settings...');
+    const container = document.getElementById('settings-vector-db');
+    if (!container) {
+        console.error('[Settings] Vector DB settings container not found');
+        return;
+    }
+
+    try {
+        await vectorDB.init();
+    } catch (error) {
+        console.error('Failed to initialize VectorDB:', error);
+        showToastCallback(_('vectorDbFailedToInitialize', {}, getTranslationsCallback()), 'error');
+        return;
+    }
+
+    let dbIdForImport = null;
+
+    const render = async () => {
+        const translations = getTranslationsCallback();
+        container.innerHTML = `
+            <div class="setting-group">
+                <div class="setting-card">
+                    <div class="setting-card-header">
+                        <h3 class="setting-card-title">${_('vectorDbSettingsHeading', {}, translations)}</h3>
+                    </div>
+                    <p class="setting-card-description">${_('vectorDbDescription', {}, translations)}</p>
+                    <div class="setting-card-content">
+                            <div class="setting-row">
+                                <label for="rag-min-score" class="setting-label">最小相关性阈值 (0~1)</label>
+                                <input type="number" id="rag-min-score" class="setting-input" min="0" max="1" step="0.01" placeholder="0.35" />
+                                <small class="setting-hint">当KB最高相关性低于该阈值时，不使用知识库增强</small>
+                            </div>
+                            <div class="setting-row">
+                                <label class="setting-label">策略</label>
+                                <div class="radio-group" id="rag-strategy-group">
+                                    <label><input type="radio" name="rag-strategy" value="hybrid" checked> 混合（优先页面，可选使用KB）</label>
+                                    <label><input type="radio" name="rag-strategy" value="kb_only"> 仅知识库（不建议）</label>
+                                </div>
+                                <small class="setting-hint">混合：若KB有用则补充，否则以页面为主；仅知识库：总是使用KB上下文</small>
+                            </div>
+                        <div id="vector-db-list" class="vector-db-list"></div>
+                        <div class="setting-card-actions">
+                            <input type="text" id="new-db-name" class="setting-input" placeholder="${_('vectorDbInputPlaceholder', {}, translations)}">
+                            <button id="create-db-btn" class="setting-action-btn">${_('add', {}, translations)}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        await renderDbList();
+        setupEventListeners();
+    };
+
+    const renderDbList = async () => {
+        const listContainer = document.getElementById('vector-db-list');
+        if (!listContainer) return;
+
+        const translations = getTranslationsCallback();
+        const dbs = await vectorDB.getAllDBs();
+        if (dbs.length === 0) {
+            listContainer.innerHTML = `<p class="hint">${_('vectorDbEmpty', {}, translations)}</p>`;
+            return;
+        }
+
+        listContainer.innerHTML = dbs.map(db => `
+            <div class="vector-db-item" data-db-id="${db.id}">
+                <span class="vector-db-name">${escapeHtml(db.name)}</span>
+                <div class="vector-db-actions">
+                    <button class="import-to-db-btn setting-action-btn" title="${_('vectorDbImportTitle', {}, translations)}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+                    </button>
+                    <button class="delete-db-btn setting-action-btn delete-btn" title="${_('vectorDbDeleteTitle', {}, translations)}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    };
+
+    const setupEventListeners = () => {
+        const ragMinScoreInput = document.getElementById('rag-min-score');
+        const ragStrategyGroup = document.getElementById('rag-strategy-group');
+
+        // Load saved settings
+        browser.storage.sync.get('ragSettings').then((res) => {
+            const cfg = res && res.ragSettings ? res.ragSettings : {};
+            if (typeof cfg.minScore === 'number') ragMinScoreInput.value = cfg.minScore;
+            const selected = (typeof cfg.strategy === 'string') ? cfg.strategy : 'hybrid';
+            const rb = ragStrategyGroup.querySelector(`input[name="rag-strategy"][value="${selected}"]`);
+            if (rb) rb.checked = true;
+        }).catch(() => {});
+
+        const saveRagSettings = () => {
+            let minScore = parseFloat(ragMinScoreInput.value);
+            if (isNaN(minScore)) minScore = 0.35;
+            minScore = Math.min(1, Math.max(0, minScore));
+            const strategy = (ragStrategyGroup.querySelector('input[name="rag-strategy"]:checked')?.value) || 'hybrid';
+            browser.storage.sync.set({ ragSettings: { minScore, strategy } });
+        };
+
+        ragMinScoreInput.addEventListener('change', saveRagSettings);
+        ragStrategyGroup.addEventListener('change', saveRagSettings);
+
+        const createBtn = document.getElementById('create-db-btn');
+        const newDbNameInput = document.getElementById('new-db-name');
+        const listContainer = document.getElementById('vector-db-list');
+        const fileInput = document.getElementById('import-to-db-input');
+
+        if (!fileInput) {
+            console.error('File input for DB import not found!');
+            return;
+        }
+
+        createBtn.addEventListener('click', async () => {
+            const name = newDbNameInput.value.trim();
+            if (name) {
+                try {
+                    await vectorDB.createDB(name);
+                    newDbNameInput.value = '';
+                    await renderDbList();
+                    showToastCallback(_('vectorDbCreated', {}, getTranslationsCallback()), 'success');
+                } catch (error) {
+                    showToastCallback(_('vectorDbCreateError', {}, getTranslationsCallback()), 'error');
+                    console.error(error);
+                }
+            }
+        });
+
+        listContainer.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-db-btn');
+            const importBtn = e.target.closest('.import-to-db-btn');
+
+            if (deleteBtn) {
+                const dbItem = e.target.closest('.vector-db-item');
+                const dbId = parseInt(dbItem.dataset.dbId, 10);
+                if (confirm(_('vectorDbDeleteConfirm', {}, getTranslationsCallback()))) {
+                    try {
+                        await vectorDB.deleteDB(dbId);
+                        await renderDbList();
+                        showToastCallback(_('vectorDbDeleted', {}, getTranslationsCallback()), 'success');
+                    } catch (error) {
+                        showToastCallback(_('vectorDbDeleteError', {}, getTranslationsCallback()), 'error');
+                        console.error(error);
+                    }
+                }
+            } else if (importBtn) {
+                const dbItem = e.target.closest('.vector-db-item');
+                dbIdForImport = parseInt(dbItem.dataset.dbId, 10);
+                fileInput.value = null;
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || dbIdForImport === null) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const content = event.target.result;
+                try {
+                    showToastCallback(_('vectorDbImporting', { fileName: file.name }, getTranslationsCallback()), 'info');
+                    await vectorDB.addDocument(dbIdForImport, content, file.name);
+                    showToastCallback(_('vectorDbImported', { fileName: file.name }, getTranslationsCallback()), 'success');
+                } catch (error) {
+                    showToastCallback(_('vectorDbImportError', { error: error.message }, getTranslationsCallback()), 'error');
+                    console.error(error);
+                }
+            };
+            reader.onerror = () => {
+                showToastCallback(_('vectorDbReadFileError', { error: reader.error }, getTranslationsCallback()), 'error');
+            };
+            reader.readAsText(file);
+
+            dbIdForImport = null;
+        });
+    };
+
+    await render();
+}
+
+
+// === Automation Settings ===
+function setupAutomationSettingsUI(state, elements) {
+    const container = document.getElementById('settings-automation');
+    if (!container) return;
+
+    const globalToggle = document.getElementById('automation-global-toggle');
+    const toolsList = document.getElementById('automation-tools-list');
+    const enableAllBtn = document.getElementById('automation-enable-all');
+    const disableAllBtn = document.getElementById('automation-disable-all');
+
+    // Expose catalog for other modules (optional)
+    try { window.toolCatalog = toolCatalog; } catch (_) {}
+
+    // Load current states
+    browser.storage.sync.get(['automationEnabled', 'automationToolToggles']).then((res) => {
+        const enabled = !!res.automationEnabled;
+        const perTool = res.automationToolToggles || {};
+        state.automationEnabled = enabled;
+        if (globalToggle) {
+            globalToggle.checked = enabled;
+            globalToggle.addEventListener('change', async (e) => {
+                const checked = e.target.checked;
+                state.automationEnabled = checked;
+                try { await browser.storage.sync.set({ automationEnabled: checked }); } catch (_) {}
+
+                // Update the automation toggle button in chat input area
+                const chatBtn = document.getElementById('automation-toggle-btn');
+                if (chatBtn) {
+                    if (checked) {
+                        chatBtn.classList.add('automation-on');
+                    } else {
+                        chatBtn.classList.remove('automation-on');
+                    }
+                }
+
+                // Update body class for automation mode
+                document.body.classList.toggle('automation-mode', checked);
+
+                if (window.showToastUI) {
+                    const t = getCurrentTranslations();
+                    window.showToastUI(checked ? _('automationToggleOn', {}, t) : _('automationToggleOff', {}, t), 'info');
+                }
+            });
+        }
+
+        // Render tool list
+        if (toolsList) {
+            renderAutomationToolsList(toolsList, perTool);
+        }
+
+        // Buttons
+        if (enableAllBtn) enableAllBtn.addEventListener('click', async () => {
+            const perToolNew = {};
+            (window.toolCatalog || toolCatalog || []).forEach(t => perToolNew[t.name] = true);
+            await browser.storage.sync.set({ automationToolToggles: perToolNew });
+            renderAutomationToolsList(toolsList, perToolNew);
+        });
+        if (disableAllBtn) disableAllBtn.addEventListener('click', async () => {
+            const perToolNew = {};
+            (window.toolCatalog || toolCatalog || []).forEach(t => perToolNew[t.name] = false);
+            await browser.storage.sync.set({ automationToolToggles: perToolNew });
+            renderAutomationToolsList(toolsList, perToolNew);
+        });
+
+        // ===== Claude Agent SDK Configuration =====
+        const sdkEndpointInput = document.getElementById('agent-sdk-endpoint');
+        const sdkApiKeyInput = document.getElementById('agent-sdk-apikey');
+        const sdkModelInput = document.getElementById('agent-sdk-model');
+        const sdkPermissionSelect = document.getElementById('agent-sdk-permission');
+        const sdkSaveBtn = document.getElementById('agent-sdk-save');
+        const sdkTestBtn = document.getElementById('agent-sdk-test');
+
+        // Load saved configuration
+        browser.storage.sync.get(['agentSdkEndpoint', 'agentSdkApiKey', 'agentSdkModel', 'agentSdkPermission']).then((res) => {
+            if (sdkEndpointInput) sdkEndpointInput.value = res.agentSdkEndpoint || '';
+            if (sdkApiKeyInput) sdkApiKeyInput.value = res.agentSdkApiKey || '';
+            if (sdkModelInput) sdkModelInput.value = res.agentSdkModel || 'claude-sonnet-4-5';
+            if (sdkPermissionSelect) sdkPermissionSelect.value = res.agentSdkPermission || 'default';
+        });
+
+        // Save configuration
+        if (sdkSaveBtn) {
+            sdkSaveBtn.addEventListener('click', async () => {
+                const endpoint = sdkEndpointInput?.value?.trim() || '';
+                const apiKey = sdkApiKeyInput?.value?.trim() || '';
+                const model = sdkModelInput?.value || 'claude-sonnet-4-5';
+                const permission = sdkPermissionSelect?.value || 'default';
+
+                await browser.storage.sync.set({
+                    agentSdkEndpoint: endpoint,
+                    agentSdkApiKey: apiKey,
+                    agentSdkModel: model,
+                    agentSdkPermission: permission
+                });
+
+                if (window.showToastUI) {
+                    const t = getCurrentTranslations();
+                    window.showToastUI(_('agentSdkSaved', {}, t) || '配置已保存', 'success');
+                }
+            });
+        }
+
+        // Test connection
+        if (sdkTestBtn) {
+            sdkTestBtn.addEventListener('click', async () => {
+                if (window.showToastUI) {
+                    const t = getCurrentTranslations();
+                    window.showToastUI(_('agentSdkTesting', {}, t) || '正在测试连接...', 'info');
+                }
+
+                const endpoint = sdkEndpointInput?.value?.trim() || '';
+                const apiKey = sdkApiKeyInput?.value?.trim() || '';
+                const model = sdkModelInput?.value || 'claude-sonnet-4-5';
+
+                // Test API connection
+                try {
+                    const testUrl = endpoint || 'https://api.anthropic.com';
+                    const response = await runtimeFetch(`${testUrl}/v1/messages`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': apiKey,
+                            'anthropic-version': '2023-06-01'
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            max_tokens: 10,
+                            messages: [{ role: 'user', content: 'Hi' }]
+                        })
+                    });
+
+                    if (response.ok) {
+                        if (window.showToastUI) {
+                            const t = getCurrentTranslations();
+                            window.showToastUI(_('agentSdkTestSuccess', {}, t) || '连接成功!', 'success');
+                        }
+                    } else if (response.status === 401) {
+                        if (window.showToastUI) {
+                            const t = getCurrentTranslations();
+                            window.showToastUI(_('agentSdkTestAuthFailed', {}, t) || '认证失败，请检查 API Key', 'error');
+                        }
+                    } else {
+                        if (window.showToastUI) {
+                            const t = getCurrentTranslations();
+                            window.showToastUI(_('agentSdkTestFailed', {}, t) || `连接失败: ${response.status}`, 'error');
+                        }
+                    }
+                } catch (error) {
+                    if (window.showToastUI) {
+                        const t = getCurrentTranslations();
+                        window.showToastUI(_('agentSdkTestError', {}, t) || `连接错误: ${error.message}`, 'error');
+                    }
+                }
+            });
+        }
+    });
+
+    // Helper to render list with categories
+    function renderAutomationToolsList(containerEl, perToolState) {
+        if (!containerEl) return;
+        containerEl.innerHTML = '';
+        const tools = (window.toolCatalog || []);
+        const t = getCurrentTranslations();
+
+        // Category translations
+        const categoryNames = {
+            tabs: t.automationCategoryTabs || '标签页操作',
+            page: t.automationCategoryPage || '页面操作',
+            elements: t.automationCategoryElements || '元素操作',
+            editor: t.automationCategoryEditor || '编辑器操作'
+        };
+
+        // Group tools by category
+        const grouped = {};
+        tools.forEach(tool => {
+            const cat = tool.category || 'other';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(tool);
+        });
+
+        // Render by category
+        Object.keys(grouped).forEach(category => {
+            // Category header
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'automation-category-header';
+            categoryHeader.textContent = categoryNames[category] || category;
+            containerEl.appendChild(categoryHeader);
+
+            // Tools in this category
+            grouped[category].forEach(tool => {
+                const row = document.createElement('div');
+                row.className = 'setting-item automation-tool-item';
+                const nameKey = `tool.${tool.name}.name`;
+                const descKey = `tool.${tool.name}.desc`;
+                const localizedName = _ (nameKey, {}, t);
+                const localizedDesc = _ (descKey, {}, t);
+                const finalName = localizedName && localizedName !== nameKey ? localizedName : (tool.displayName || tool.name);
+                const translatedDesc = t[tool.description] || '';
+                const finalDesc = translatedDesc || (localizedDesc && localizedDesc !== descKey ? localizedDesc : (tool.description || ''));
+                row.innerHTML = `
+                    <div class="setting-item-label">
+                        <div class="setting-card-title">${finalName}</div>
+                        <div class="setting-card-description">${finalDesc}</div>
+                    </div>
+                    <div class="setting-item-control">
+                        <label class="switch">
+                            <input type="checkbox" ${perToolState[tool.name] !== false ? 'checked' : ''} data-tool="${tool.name}">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                `;
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', async () => {
+                    const name = checkbox.dataset.tool;
+                    const newState = { ...perToolState, [name]: checkbox.checked };
+                    await browser.storage.sync.set({ automationToolToggles: newState });
+                });
+                containerEl.appendChild(row);
+            });
+        });
+    }
+}
+
 // 辅助函数：HTML转义
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
+
+// === Editor Appearance Settings ===
+
+function initEditorAppearanceSettings() {
+    const inputs = {
+        editorBgColor: document.getElementById('editor-bg-color'),
+        previewBgColor: document.getElementById('preview-bg-color'),
+        cmGutterBg: document.getElementById('gutter-bg-color'),
+        cmLinenumberColor: document.getElementById('linenumber-color'),
+    };
+    const resetBtn = document.getElementById('reset-editor-colors');
+    const styleTagId = 'custom-editor-colors-style';
+
+    let currentSettings = { light: {}, dark: {} };
+
+    const generateCss = (settings) => {
+        const { light = {}, dark = {} } = settings;
+        const rootCss = light && Object.keys(light).length > 0 ?
+            `:root {\n${Object.entries(light).map(([key, value]) => `    --${{
+                editorBgColor: 'custom-editor-bg',
+                previewBgColor: 'custom-preview-bg',
+                cmGutterBg: 'cm-gutter-bg',
+                cmLinenumberColor: 'cm-linenumber-color'
+            }[key]}: ${value};`).join('\n')}\n}` : '';
+
+        const darkCss = dark && Object.keys(dark).length > 0 ?
+            `body.dark-mode {\n${Object.entries(dark).map(([key, value]) => `    --${{
+                editorBgColor: 'custom-editor-bg',
+                previewBgColor: 'custom-preview-bg',
+                cmGutterBg: 'cm-gutter-bg',
+                cmLinenumberColor: 'cm-linenumber-color'
+            }[key]}: ${value};`).join('\n')}\n}` : '';
+
+        return `${rootCss}\n\n${darkCss}`.trim();
+    };
+
+    const updateStyleTag = (settings) => {
+        let styleTag = document.getElementById(styleTagId);
+        const cssText = generateCss(settings);
+        if (cssText) {
+            if (!styleTag) {
+                styleTag = document.createElement('style');
+                styleTag.id = styleTagId;
+                document.head.appendChild(styleTag);
+            }
+            styleTag.textContent = cssText;
+        } else if (styleTag) {
+            styleTag.remove();
+        }
+    };
+
+    const updateColorInputs = () => {
+        const isDark = document.body.classList.contains('dark-mode');
+        const theme = isDark ? 'dark' : 'light';
+        const themeSettings = currentSettings[theme] || {};
+        const defaults = {
+            editorBgColor: isDark ? '#282a36' : '#f0f8ff',
+            previewBgColor: isDark ? '#282a36' : '#f0f8ff',
+            cmGutterBg: isDark ? '#44475a' : '#f8f9fa',
+            cmLinenumberColor: isDark ? '#6272a4' : '#6c757d'
+        };
+
+        for (const key in inputs) {
+            if (inputs[key]) {
+                inputs[key].value = themeSettings[key] || defaults[key];
+            }
+        }
+    };
+
+    browser.storage.sync.get('editorAppearanceColors').then(result => {
+        currentSettings = result.editorAppearanceColors || { light: {}, dark: {} };
+        updateStyleTag(currentSettings);
+        updateColorInputs();
+    });
+
+    for (const key in inputs) {
+        if (inputs[key]) {
+            inputs[key].addEventListener('input', (e) => {
+                const isDark = document.body.classList.contains('dark-mode');
+                const theme = isDark ? 'dark' : 'light';
+                if (!currentSettings[theme]) currentSettings[theme] = {};
+                currentSettings[theme][key] = e.target.value;
+                browser.storage.sync.set({ editorAppearanceColors: currentSettings });
+                updateStyleTag(currentSettings);
+            });
+        }
+    }
+
+    const themeObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.attributeName === 'class') {
+                updateColorInputs();
+                break;
+            }
+        }
+    });
+
+    themeObserver.observe(document.body, { attributes: true });
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            currentSettings = { light: {}, dark: {} };
+            browser.storage.sync.remove('editorAppearanceColors');
+            updateStyleTag({});
+            updateColorInputs();
+            const currentTranslations = getCurrentTranslations();
+            window.showToastUI(_('colorsResetSuccess', {}, currentTranslations), 'success');
+        });
+    }
+}
+
+async function initMcpSettings() {
+    const generalSettings = document.getElementById('settings-general');
+    if (!generalSettings) {
+        return;
+    }
+
+    let host = document.getElementById('mcp-settings-host');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'mcp-settings-host';
+        host.className = 'setting-group';
+        generalSettings.appendChild(host);
+    }
+
+    host.innerHTML = `
+        <div class="setting-card mcp-settings-card">
+            <div class="setting-card-header">
+                <div class="setting-card-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                        <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+                        <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                        <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+                    </svg>
+                </div>
+                <div>
+                    <div class="setting-card-title">MCP 服务器</div>
+                    <div class="setting-card-description">配置远程 MCP server，供 Agent 动态加载和调用工具。</div>
+                </div>
+            </div>
+            <div class="setting-card-content">
+                <div class="mcp-settings-grid">
+                    <div class="setting-item">
+                        <label>服务器</label>
+                        <select id="mcp-server-select" class="setting-select"></select>
+                    </div>
+                    <div class="setting-item">
+                        <label>传输</label>
+                        <select id="mcp-transport" class="setting-select">
+                            <option value="streamable-http">Streamable HTTP</option>
+                            <option value="sse">SSE (兼容)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>名称</label>
+                        <input id="mcp-name" class="setting-input" type="text" placeholder="例如：本地知识库" />
+                    </div>
+                    <div class="setting-item">
+                        <label>启用</label>
+                        <select id="mcp-enabled" class="setting-select">
+                            <option value="true">启用</option>
+                            <option value="false">禁用</option>
+                        </select>
+                    </div>
+                    <div class="setting-item mcp-grid-span-2">
+                        <label>URL</label>
+                        <input id="mcp-url" class="setting-input" type="text" placeholder="https://example.com/mcp" />
+                    </div>
+                    <div class="setting-item mcp-grid-span-2">
+                        <label>Message URL（仅 SSE）</label>
+                        <input id="mcp-message-url" class="setting-input" type="text" placeholder="https://example.com/messages" />
+                    </div>
+                    <div class="setting-item">
+                        <label>认证方式</label>
+                        <select id="mcp-auth-type" class="setting-select">
+                            <option value="none">无</option>
+                            <option value="bearer">Bearer Token</option>
+                            <option value="api-key">API Key</option>
+                            <option value="custom-header">自定义 Header</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>认证 Header</label>
+                        <input id="mcp-auth-header" class="setting-input" type="text" placeholder="Authorization" />
+                    </div>
+                    <div class="setting-item mcp-grid-span-2">
+                        <label>认证 Token</label>
+                        <input id="mcp-auth-token" class="setting-input" type="password" placeholder="可留空" />
+                    </div>
+                </div>
+                <div class="mcp-server-meta" id="mcp-server-meta">未选择 MCP 服务器</div>
+                <div class="mcp-server-list" id="mcp-server-list"></div>
+                <div class="setting-card-actions">
+                    <button id="mcp-new-btn" class="setting-action-btn">新建</button>
+                    <button id="mcp-save-btn" class="setting-action-btn">保存</button>
+                    <button id="mcp-test-btn" class="setting-action-btn">测试连接</button>
+                    <button id="mcp-refresh-tools-btn" class="setting-action-btn">刷新工具</button>
+                    <button id="mcp-remove-btn" class="setting-action-btn delete-btn">删除</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const elements = {
+        serverSelect: host.querySelector('#mcp-server-select'),
+        transport: host.querySelector('#mcp-transport'),
+        name: host.querySelector('#mcp-name'),
+        enabled: host.querySelector('#mcp-enabled'),
+        url: host.querySelector('#mcp-url'),
+        messageUrl: host.querySelector('#mcp-message-url'),
+        authType: host.querySelector('#mcp-auth-type'),
+        authHeader: host.querySelector('#mcp-auth-header'),
+        authToken: host.querySelector('#mcp-auth-token'),
+        meta: host.querySelector('#mcp-server-meta'),
+        serverList: host.querySelector('#mcp-server-list'),
+        newBtn: host.querySelector('#mcp-new-btn'),
+        saveBtn: host.querySelector('#mcp-save-btn'),
+        testBtn: host.querySelector('#mcp-test-btn'),
+        refreshBtn: host.querySelector('#mcp-refresh-tools-btn'),
+        removeBtn: host.querySelector('#mcp-remove-btn')
+    };
+
+    const state = {
+        selectedServerId: '',
+        servers: []
+    };
+
+    const showToast = (message, type = 'info') => {
+        if (window.showToastUI) {
+            window.showToastUI(message, type);
+        }
+    };
+
+    const readForm = () => ({
+        id: state.selectedServerId || undefined,
+        name: elements.name.value.trim(),
+        transport: elements.transport.value,
+        enabled: elements.enabled.value === 'true',
+        url: elements.url.value.trim(),
+        messageUrl: elements.messageUrl.value.trim(),
+        authType: elements.authType.value,
+        authHeaderName: elements.authHeader.value.trim(),
+        authToken: elements.authToken.value
+    });
+
+    const applyServerToForm = (server) => {
+        elements.transport.value = server?.transport || 'streamable-http';
+        elements.name.value = server?.name || '';
+        elements.enabled.value = server?.enabled === false ? 'false' : 'true';
+        elements.url.value = server?.url || '';
+        elements.messageUrl.value = server?.messageUrl || '';
+        elements.authType.value = server?.authType || 'none';
+        elements.authHeader.value = server?.authHeaderName || 'Authorization';
+        elements.authToken.value = server?.authToken || '';
+        if (server) {
+            elements.meta.textContent = `已选择：${server.name} · ${server.transport} · ${server.enabled === false ? '禁用' : '启用'}`;
+        } else {
+            elements.meta.textContent = '新建 MCP 服务器';
+        }
+    };
+
+    const renderServerOptions = () => {
+        const options = ['<option value="">新建 MCP 服务器</option>'];
+        for (const server of state.servers) {
+            const suffix = server.enabled === false ? '（已禁用）' : '';
+            options.push(`<option value="${escapeHtml(server.id)}">${escapeHtml(server.name)}${suffix}</option>`);
+        }
+        elements.serverSelect.innerHTML = options.join('');
+        elements.serverSelect.value = state.selectedServerId || '';
+    };
+
+    const renderServerList = () => {
+        if (!elements.serverList) {
+            return;
+        }
+        if (!state.servers.length) {
+            elements.serverList.innerHTML = '<div class="mcp-server-empty">当前还没有 MCP 服务器</div>';
+            return;
+        }
+        elements.serverList.innerHTML = state.servers.map((server) => {
+            const isActive = server.id === state.selectedServerId;
+            const statusClass = server.connected ? 'connected' : (server.lastError ? 'error' : 'idle');
+            const statusLabel = server.connected ? '在线' : (server.lastError ? '异常' : '未连接');
+            const toolCount = Number.isFinite(server.toolCount) ? server.toolCount : 0;
+            const errorText = server.lastError ? `<div class="mcp-server-error">${escapeHtml(server.lastError)}</div>` : '';
+            return `
+                <button type="button" class="mcp-server-item ${isActive ? 'active' : ''}" data-server-id="${escapeHtml(server.id)}">
+                    <div class="mcp-server-item-head">
+                        <span class="mcp-server-name">${escapeHtml(server.name)}</span>
+                        <span class="mcp-server-status ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="mcp-server-item-meta">
+                        <span>${escapeHtml(server.transport)}</span>
+                        <span>${toolCount} 个工具</span>
+                        <span>${server.enabled === false ? '已禁用' : '已启用'}</span>
+                    </div>
+                    ${errorText}
+                </button>
+            `;
+        }).join('');
+
+        elements.serverList.querySelectorAll('.mcp-server-item').forEach((button) => {
+            button.addEventListener('click', () => {
+                state.selectedServerId = button.dataset.serverId || '';
+                elements.serverSelect.value = state.selectedServerId;
+                const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+                applyServerToForm(selectedServer);
+                renderServerList();
+            });
+        });
+    };
+
+    const loadServers = async (keepSelected = true) => {
+        const response = await browser.runtime.sendMessage({ action: 'mcp.listServers' });
+        state.servers = response?.success && Array.isArray(response.data) ? response.data : [];
+        if (!keepSelected || !state.servers.some((server) => server.id === state.selectedServerId)) {
+            state.selectedServerId = '';
+        }
+        renderServerOptions();
+        renderServerList();
+        const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+        applyServerToForm(selectedServer);
+    };
+
+    elements.serverSelect.addEventListener('change', () => {
+        state.selectedServerId = elements.serverSelect.value;
+        const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+        applyServerToForm(selectedServer);
+    });
+
+    elements.newBtn.addEventListener('click', () => {
+        state.selectedServerId = '';
+        elements.serverSelect.value = '';
+        applyServerToForm(null);
+    });
+
+    elements.saveBtn.addEventListener('click', async () => {
+        const server = readForm();
+        if (!server.name || !server.url) {
+            showToast('MCP 服务器名称和 URL 不能为空', 'error');
+            return;
+        }
+        if (server.transport === 'sse' && !server.messageUrl) {
+            showToast('SSE 传输需要填写 Message URL', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.upsertServer',
+            server
+        });
+        if (!response?.success) {
+            showToast(response?.error || '保存 MCP 服务器失败', 'error');
+            return;
+        }
+        state.selectedServerId = response.data.id;
+        await loadServers(true);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast('MCP 服务器已保存', 'success');
+    });
+
+    elements.testBtn.addEventListener('click', async () => {
+        const server = readForm();
+        if (!server.name || !server.url) {
+            showToast('请先填写 MCP 服务器名称和 URL', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.testServer',
+            server
+        });
+        if (!response?.success) {
+            showToast(response?.error || 'MCP 测试失败', 'error');
+            return;
+        }
+        const toolCount = response.data?.toolCount || 0;
+        showToast(`MCP 测试成功，发现 ${toolCount} 个工具`, 'success');
+    });
+
+    elements.refreshBtn.addEventListener('click', async () => {
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.listTools',
+            refresh: true
+        });
+        if (!response?.success) {
+            showToast(response?.error || '刷新 MCP 工具失败', 'error');
+            return;
+        }
+        await loadServers(true);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast(`已刷新 MCP 工具，共 ${response.data.length} 个`, 'success');
+    });
+
+    elements.removeBtn.addEventListener('click', async () => {
+        if (!state.selectedServerId) {
+            showToast('当前没有选中的 MCP 服务器', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.removeServer',
+            serverId: state.selectedServerId
+        });
+        if (!response?.success) {
+            showToast(response?.error || '删除 MCP 服务器失败', 'error');
+            return;
+        }
+        state.selectedServerId = '';
+        await loadServers(false);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast('MCP 服务器已删除', 'success');
+    });
+
+    await loadServers(false);
+}
+
+async function initMcpSettingsRuntime() {
+    const automationSettings = document.getElementById('settings-automation');
+    if (!automationSettings) {
+        return;
+    }
+
+    let host = document.getElementById('mcp-settings-host');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'mcp-settings-host';
+    }
+    host.className = 'setting-card unified-settings-card agent-sdk-card mcp-settings-card';
+    automationSettings.appendChild(host);
+
+    host.innerHTML = `
+        <div class="setting-card-header">
+            <div>
+                <div class="setting-card-title">MCP 服务</div>
+                <div class="setting-card-description">配置远程 MCP 服务，支持 Streamable HTTP 和兼容模式 SSE。</div>
+            </div>
+            <div class="agent-sdk-status mcp-settings-status">
+                <span class="status-dot"></span>
+                <span class="status-text" id="mcp-server-meta">正在加载 MCP 状态...</span>
+            </div>
+        </div>
+        <div class="setting-card-content">
+            <div class="agent-sdk-grid mcp-settings-form-grid">
+                <div class="setting-item full-width">
+                    <label for="mcp-server-select">服务</label>
+                    <select id="mcp-server-select" class="unified-select"></select>
+                </div>
+                <div class="setting-item">
+                    <label for="mcp-transport">传输</label>
+                    <select id="mcp-transport" class="unified-select">
+                        <option value="streamable-http">Streamable HTTP</option>
+                        <option value="sse">Legacy SSE</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="mcp-enabled">状态</label>
+                    <select id="mcp-enabled" class="unified-select">
+                        <option value="true">启用</option>
+                        <option value="false">禁用</option>
+                    </select>
+                </div>
+                <div class="setting-item full-width">
+                    <label for="mcp-name">名称</label>
+                    <input id="mcp-name" class="unified-input" type="text" placeholder="例如：团队知识库" />
+                </div>
+                <div class="setting-item full-width">
+                    <label for="mcp-url">URL</label>
+                    <input id="mcp-url" class="unified-input" type="text" placeholder="https://example.com/mcp" />
+                </div>
+                <div class="setting-item full-width">
+                    <label for="mcp-message-url">Message URL（仅 SSE）</label>
+                    <input id="mcp-message-url" class="unified-input" type="text" placeholder="https://example.com/messages" />
+                </div>
+                <div class="setting-item">
+                    <label for="mcp-auth-type">认证方式</label>
+                    <select id="mcp-auth-type" class="unified-select">
+                        <option value="none">无</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="api-key">API Key</option>
+                        <option value="custom-header">自定义 Header</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="mcp-auth-header">认证 Header</label>
+                    <input id="mcp-auth-header" class="unified-input" type="text" placeholder="Authorization" />
+                </div>
+                <div class="setting-item full-width">
+                    <label for="mcp-auth-token">认证 Token</label>
+                    <input id="mcp-auth-token" class="unified-input" type="password" placeholder="可留空" />
+                </div>
+            </div>
+            <div class="mcp-server-list" id="mcp-server-list"></div>
+            <div class="setting-card-actions">
+                <button id="mcp-new-btn" class="unified-action-btn"><span>新建</span></button>
+                <button id="mcp-save-btn" class="unified-action-btn primary"><span>保存</span></button>
+                <button id="mcp-test-btn" class="unified-action-btn"><span>测试连接</span></button>
+                <button id="mcp-refresh-tools-btn" class="unified-action-btn"><span>刷新目录</span></button>
+                <button id="mcp-remove-btn" class="unified-action-btn"><span>删除</span></button>
+            </div>
+        </div>
+    `;
+
+    const elements = {
+        serverSelect: host.querySelector('#mcp-server-select'),
+        transport: host.querySelector('#mcp-transport'),
+        name: host.querySelector('#mcp-name'),
+        enabled: host.querySelector('#mcp-enabled'),
+        url: host.querySelector('#mcp-url'),
+        messageUrl: host.querySelector('#mcp-message-url'),
+        authType: host.querySelector('#mcp-auth-type'),
+        authHeader: host.querySelector('#mcp-auth-header'),
+        authToken: host.querySelector('#mcp-auth-token'),
+        meta: host.querySelector('#mcp-server-meta'),
+        serverList: host.querySelector('#mcp-server-list'),
+        newBtn: host.querySelector('#mcp-new-btn'),
+        saveBtn: host.querySelector('#mcp-save-btn'),
+        testBtn: host.querySelector('#mcp-test-btn'),
+        refreshBtn: host.querySelector('#mcp-refresh-tools-btn'),
+        removeBtn: host.querySelector('#mcp-remove-btn')
+    };
+
+    const state = {
+        selectedServerId: '',
+        servers: [],
+        isDirty: false,
+        suppressDirtyTracking: false,
+        draft: null,
+        summary: {
+            toolCount: 0,
+            resourceCount: 0,
+            promptCount: 0
+        }
+    };
+
+    const showToast = (message, type = 'info') => {
+        if (window.showToastUI) {
+            window.showToastUI(message, type);
+        }
+    };
+
+    const readForm = () => ({
+        id: state.selectedServerId || undefined,
+        name: elements.name.value.trim(),
+        transport: elements.transport.value,
+        enabled: elements.enabled.value === 'true',
+        url: elements.url.value.trim(),
+        messageUrl: elements.messageUrl.value.trim(),
+        authType: elements.authType.value,
+        authHeaderName: elements.authHeader.value.trim(),
+        authToken: elements.authToken.value
+    });
+
+    const syncDraftFromForm = () => {
+        if (state.suppressDirtyTracking) {
+            return;
+        }
+        state.draft = readForm();
+        state.isDirty = true;
+    };
+
+    const updateMeta = (selectedServer = null) => {
+        if (selectedServer) {
+            const syncedText = selectedServer.lastSyncedAt
+                ? `，上次同步 ${new Date(selectedServer.lastSyncedAt).toLocaleString()}`
+                : '';
+            elements.meta.textContent = `${selectedServer.name} · ${selectedServer.transport} · ${selectedServer.enabled === false ? '已禁用' : '已启用'} · 工具 ${selectedServer.toolCount || 0} · 资源 ${selectedServer.resourceCount || 0} · 提示词 ${selectedServer.promptCount || 0}${syncedText}`;
+            return;
+        }
+        elements.meta.textContent = `已配置 ${state.servers.length} 个 MCP 服务，工具 ${state.summary.toolCount} 个，资源 ${state.summary.resourceCount} 条，提示词 ${state.summary.promptCount} 个`;
+    };
+
+    const applyServerToForm = (server) => {
+        state.suppressDirtyTracking = true;
+        elements.transport.value = server?.transport || 'streamable-http';
+        elements.name.value = server?.name || '';
+        elements.enabled.value = server?.enabled === false ? 'false' : 'true';
+        elements.url.value = server?.url || '';
+        elements.messageUrl.value = server?.messageUrl || '';
+        elements.authType.value = server?.authType || 'none';
+        elements.authHeader.value = server?.authHeaderName || 'Authorization';
+        elements.authToken.value = server?.authToken || '';
+        state.suppressDirtyTracking = false;
+        state.draft = null;
+        state.isDirty = false;
+        updateMeta(server);
+    };
+
+    const applyDraftToForm = () => {
+        if (!state.draft) {
+            return;
+        }
+        state.suppressDirtyTracking = true;
+        elements.transport.value = state.draft.transport || 'streamable-http';
+        elements.name.value = state.draft.name || '';
+        elements.enabled.value = state.draft.enabled === false ? 'false' : 'true';
+        elements.url.value = state.draft.url || '';
+        elements.messageUrl.value = state.draft.messageUrl || '';
+        elements.authType.value = state.draft.authType || 'none';
+        elements.authHeader.value = state.draft.authHeaderName || 'Authorization';
+        elements.authToken.value = state.draft.authToken || '';
+        state.suppressDirtyTracking = false;
+    };
+
+    const renderServerOptions = () => {
+        const options = ['<option value="">新建 MCP 服务</option>'];
+        for (const server of state.servers) {
+            const suffix = server.enabled === false ? '（已禁用）' : '';
+            options.push(`<option value="${escapeHtml(server.id)}">${escapeHtml(server.name)}${suffix}</option>`);
+        }
+        elements.serverSelect.innerHTML = options.join('');
+        elements.serverSelect.value = state.selectedServerId || '';
+    };
+
+    const renderServerList = () => {
+        if (!state.servers.length) {
+            elements.serverList.innerHTML = '<div class="mcp-server-empty">当前还没有 MCP 服务</div>';
+            return;
+        }
+
+        elements.serverList.innerHTML = state.servers.map((server) => {
+            const isActive = server.id === state.selectedServerId;
+            const statusClass = server.connected ? 'connected' : (server.lastError ? 'error' : 'idle');
+            const statusLabel = server.connected ? '在线' : (server.lastError ? '异常' : '未连接');
+            const errorText = server.lastError ? `<div class="mcp-server-error">${escapeHtml(server.lastError)}</div>` : '';
+            return `
+                <button type="button" class="mcp-server-item ${isActive ? 'active' : ''}" data-server-id="${escapeHtml(server.id)}">
+                    <div class="mcp-server-item-head">
+                        <span class="mcp-server-name">${escapeHtml(server.name)}</span>
+                        <span class="mcp-server-status ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="mcp-server-item-meta">
+                        <span>${escapeHtml(server.transport)}</span>
+                        <span>工具 ${server.toolCount || 0}</span>
+                        <span>资源 ${server.resourceCount || 0}</span>
+                        <span>提示词 ${server.promptCount || 0}</span>
+                        <span>${server.enabled === false ? '已禁用' : '已启用'}</span>
+                    </div>
+                    ${errorText}
+                </button>
+            `;
+        }).join('');
+
+        elements.serverList.querySelectorAll('.mcp-server-item').forEach((button) => {
+            button.addEventListener('click', () => {
+                state.selectedServerId = button.dataset.serverId || '';
+                elements.serverSelect.value = state.selectedServerId;
+                const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+                applyServerToForm(selectedServer);
+                renderServerList();
+            });
+        });
+    };
+
+    const loadServers = async (keepSelected = true) => {
+        const response = await browser.runtime.sendMessage({ action: 'mcp.getState' });
+        const payload = response?.success ? (response.data || {}) : {};
+        state.servers = Array.isArray(payload.servers) ? payload.servers : [];
+        state.summary.toolCount = Number.isFinite(payload.toolCount) ? payload.toolCount : 0;
+        state.summary.resourceCount = Number.isFinite(payload.resourceCount) ? payload.resourceCount : 0;
+        state.summary.promptCount = Number.isFinite(payload.promptCount) ? payload.promptCount : 0;
+        if (!keepSelected || !state.servers.some((server) => server.id === state.selectedServerId)) {
+            state.selectedServerId = '';
+        }
+        renderServerOptions();
+        renderServerList();
+        const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+        if (state.isDirty && state.draft) {
+            applyDraftToForm();
+            updateMeta(selectedServer);
+        } else {
+            applyServerToForm(selectedServer);
+        }
+    };
+
+    [
+        elements.transport,
+        elements.name,
+        elements.enabled,
+        elements.url,
+        elements.messageUrl,
+        elements.authType,
+        elements.authHeader,
+        elements.authToken
+    ].forEach((field) => {
+        field.addEventListener('input', syncDraftFromForm);
+        field.addEventListener('change', syncDraftFromForm);
+    });
+
+    elements.serverSelect.addEventListener('change', () => {
+        state.selectedServerId = elements.serverSelect.value;
+        const selectedServer = state.servers.find((server) => server.id === state.selectedServerId) || null;
+        applyServerToForm(selectedServer);
+    });
+
+    elements.newBtn.addEventListener('click', () => {
+        state.selectedServerId = '';
+        elements.serverSelect.value = '';
+        applyServerToForm(null);
+    });
+
+    elements.saveBtn.addEventListener('click', async () => {
+        const server = readForm();
+        if (!server.name || !server.url) {
+            showToast('MCP 服务名称和 URL 不能为空', 'error');
+            return;
+        }
+        if (server.transport === 'sse' && !server.messageUrl) {
+            showToast('SSE 传输需要填写 Message URL', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.upsertServer',
+            server
+        });
+        if (!response?.success) {
+            showToast(response?.error || '保存 MCP 服务失败', 'error');
+            return;
+        }
+        state.selectedServerId = response.data.id;
+        state.draft = null;
+        state.isDirty = false;
+        await loadServers(true);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast('MCP 服务已保存', 'success');
+    });
+
+    elements.testBtn.addEventListener('click', async () => {
+        const server = readForm();
+        if (!server.name || !server.url) {
+            showToast('请先填写 MCP 服务名称和 URL', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.testServer',
+            server
+        });
+        if (!response?.success) {
+            showToast(response?.error || 'MCP 连接测试失败', 'error');
+            return;
+        }
+        await loadServers(true);
+        showToast(`测试成功，发现 ${response.data?.toolCount || 0} 个工具、${response.data?.resourceCount || 0} 条资源、${response.data?.promptCount || 0} 个提示词`, 'success');
+    });
+
+    elements.refreshBtn.addEventListener('click', async () => {
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.listTools',
+            refresh: true
+        });
+        if (!response?.success) {
+            showToast(response?.error || '刷新 MCP 目录失败', 'error');
+            return;
+        }
+        await browser.runtime.sendMessage({ action: 'mcp.listResources', refresh: true });
+        await browser.runtime.sendMessage({ action: 'mcp.listPrompts', refresh: true });
+        await loadServers(true);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast(`目录已刷新，共 ${Array.isArray(response.data) ? response.data.length : 0} 个远程工具`, 'success');
+    });
+
+    elements.removeBtn.addEventListener('click', async () => {
+        if (!state.selectedServerId) {
+            showToast('当前没有选中的 MCP 服务', 'error');
+            return;
+        }
+        const response = await browser.runtime.sendMessage({
+            action: 'mcp.removeServer',
+            serverId: state.selectedServerId
+        });
+        if (!response?.success) {
+            showToast(response?.error || '删除 MCP 服务失败', 'error');
+            return;
+        }
+        state.selectedServerId = '';
+        state.draft = null;
+        state.isDirty = false;
+        await loadServers(false);
+        window.dispatchEvent(new CustomEvent('infinpilot:mcp-changed'));
+        showToast('MCP 服务已删除', 'success');
+    });
+
+    if (host.__mcpRefreshTimer) {
+        clearInterval(host.__mcpRefreshTimer);
+    }
+    host.__mcpRefreshTimer = setInterval(() => {
+        if (!document.hidden) {
+            void loadServers(true);
+        }
+    }, 15000);
+
+    window.addEventListener('infinpilot:mcp-changed', () => {
+        void loadServers(true);
+    });
+
+    await loadServers(false);
+}
+
+
+// =================================================================
+// User Account & Authentication
+// =================================================================
+
+/**
+ * Initializes the User Account section in the settings.
+ */
+async function initUserAccount() {
+    const accountContentEl = document.getElementById('user-account-content');
+    if (!accountContentEl) {
+        console.warn('[Settings] User account content element not found.');
+        return;
+    }
+
+    try {
+        const result = await browser.storage.local.get('userProfile');
+        if (result.userProfile && result.userProfile.email) {
+            renderLoggedInState(result.userProfile, accountContentEl);
+        } else {
+            renderLoggedOutState(accountContentEl);
+        }
+    } catch (error) {
+        console.error('[Settings] Error loading user profile:', error);
+        renderLoggedOutState(accountContentEl);
+    }
+}
+
+/**
+ * Renders the UI for a logged-in user.
+ * @param {object} user - The user profile object.
+ * @param {HTMLElement} container - The container element for the user account content.
+ */
+function renderLoggedInState(user, container) {
+    const translations = getCurrentTranslations();
+    container.innerHTML = `
+        <div class="user-profile">
+            <img src="${user.picture || '../magic.png'}" alt="User Avatar" class="user-avatar">
+            <div class="user-details">
+                <div class="user-name">${escapeHtml(user.name)}</div>
+                <div class="user-email">${escapeHtml(user.email)}</div>
+            </div>
+        </div>
+        <div class="setting-card-actions">
+            <button id="logout-button" class="setting-action-btn delete-btn">
+                ${_('logoutButton', {}, translations)}
+            </button>
+        </div>
+    `;
+
+    document.getElementById('logout-button').addEventListener('click', handleLogout);
+}
+
+/**
+ * Renders the UI for a logged-out user.
+ * @param {HTMLElement} container - The container element for the user account content.
+ */
+function renderLoggedOutState(container) {
+    const translations = getCurrentTranslations();
+    container.innerHTML = `
+        <p class="setting-card-description">${_('loginDescription', {}, translations)}</p>
+        <div class="setting-card-actions">
+            <button id="google-login-button" class="setting-action-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;"><path fill-rule="evenodd" clip-rule="evenodd" d="M17.64 9.20455C17.64 8.56636 17.5827 7.95273 17.4764 7.36364H9V10.845h4.84364C13.6377 12.2273 12.5577 13.2714 11.1264 14.0932V16.2182H13.5682C14.9909 14.9386 16.0718 13.2273 16.8286 11.25H17.64V9.20455Z" fill="#4285F4"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 18C11.43 18 13.4673 17.1941 14.9909 15.9068L12.5573 14.0932C11.7455 14.6318 10.5655 15 9 15C6.65364 15 4.67182 13.4391 3.96455 11.475H1.42091V13.6C2.72182 16.0932 5.62818 18 9 18Z" fill="#34A853"/><path fill-rule="evenodd" clip-rule="evenodd" d="M3.96455 11.475C3.78455 10.9659 3.68182 10.4341 3.68182 9.88636C3.68182 9.33864 3.78455 8.80682 3.96455 8.29773V6.17273H1.42091C0.519545 7.84318 0 9.81682 0 12C0 14.1832 0.519545 16.1568 1.42091 17.8273L3.96455 15.525V11.475Z" fill="#FBBC05"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 3.68182C10.2255 3.68182 11.2864 4.125 12.1045 4.90682L15.0555 1.95682C13.4673 0.743182 11.43 0 9 0C5.62818 0 2.72182 1.90682 1.42091 4.37273L3.96455 6.49773C4.67182 4.53409 6.65364 3.68182 9 3.68182Z" fill="#EA4335"/></svg>
+                ${_('loginWithGoogle', {}, translations)}
+            </button>
+        </div>
+    `;
+
+    document.getElementById('google-login-button').addEventListener('click', handleGoogleLogin);
+}
+
+/**
+ * Handles the Google login process.
+ */
+function handleGoogleLogin() {
+    const loginButton = document.getElementById('google-login-button');
+    const translations = getCurrentTranslations();
+    
+    if (loginButton) {
+        loginButton.disabled = true;
+        loginButton.textContent = _('loggingIn', {}, translations);
+    }
+
+    browser.runtime.sendMessage({ action: "startGoogleAuth" }, async (response) => {
+        if (browser.runtime.lastError) {
+            console.error('[Settings] Login failed:', browser.runtime.lastError);
+            if (window.showToastUI) window.showToastUI(_('loginError', { error: browser.runtime.lastError.message }, translations), 'error');
+            renderLoggedOutState(document.getElementById('user-account-content')); // Restore button
+            return;
+        }
+
+        if (response && response.success) {
+            try {
+                await browser.storage.local.set({ userProfile: response.user });
+                if (window.showToastUI) window.showToastUI(_('loginSuccess', {}, translations), 'success');
+                renderLoggedInState(response.user, document.getElementById('user-account-content'));
+            } catch (error) {
+                console.error('[Settings] Failed to save user profile:', error);
+                if (window.showToastUI) window.showToastUI(_('loginError', { error: 'Failed to save profile.' }, translations), 'error');
+                renderLoggedOutState(document.getElementById('user-account-content'));
+            }
+        } else {
+            console.error('[Settings] Login failed:', response.error);
+            if (window.showToastUI) window.showToastUI(_('loginError', { error: response.error }, translations), 'error');
+            renderLoggedOutState(document.getElementById('user-account-content')); // Restore button
+        }
+    });
+}
+
+/**
+ * Handles the logout process.
+ */
+async function handleLogout() {
+    const translations = getCurrentTranslations();
+    try {
+        await browser.storage.local.remove('userProfile');
+        // Also remove the token from the identity cache
+        try {
+            const tokenInfo = await browser.identity.getAuthToken({ interactive: false });
+            if (tokenInfo && tokenInfo.token) {
+                await browser.identity.removeCachedAuthToken({ token: tokenInfo.token });
+            }
+        } catch (e) {
+            // This might fail if the user is already de-authorized, which is fine.
+            console.warn('[Settings] Could not remove cached auth token during logout:', e.message);
+        }
+        if (window.showToastUI) window.showToastUI(_('logoutSuccess', {}, translations), 'success');
+        renderLoggedOutState(document.getElementById('user-account-content'));
+    } catch (error) {
+        console.error('[Settings] Logout failed:', error);
+        if (window.showToastUI) window.showToastUI(_('logoutError', { error: error.message }, translations), 'error');
+    }
+}
+
+/**
+ * Handles user profile changes
+ * @param {object} state - Global state reference
+ * @param {object} elements - DOM elements reference
+ * @param {function} showToastCallback - Callback for showing toast messages
+ * @param {object} currentTranslations - Current translations object
+ */
+export function handleUserProfileChange(state, elements, showToastCallback, currentTranslations) {
+    const userName = elements.userNameInput.value.trim();
+    const userAvatarFile = elements.userAvatarInput.files[0];
+
+    state.userName = userName;
+
+    // Save username to sync storage
+    browser.storage.sync.set({ userName: userName }, () => {
+        if (browser.runtime.lastError) {
+            console.error("Error saving user name:", browser.runtime.lastError);
+            showToastCallback(_('saveFailedToast', { error: browser.runtime.lastError.message }, currentTranslations), 'error');
+        } else {
+            console.log(`User name saved: ${userName}`);
+            showToastCallback(_('userProfileSaved', {}, currentTranslations), 'success');
+        }
+    });
+
+    const saveAvatar = (avatarData) => {
+        state.userAvatar = avatarData;
+        browser.storage.local.set({ userAvatar: avatarData }, () => {
+            if (browser.runtime.lastError) {
+                console.error("Error saving user avatar:", browser.runtime.lastError);
+                showToastCallback(_('saveFailedToast', { error: browser.runtime.lastError.message }, currentTranslations), 'error');
+            } else {
+                console.log(`User avatar saved.`);
+                const avatarPreview = document.getElementById('user-avatar-preview');
+                if (avatarPreview) {
+                    avatarPreview.src = avatarData;
+                }
+            }
+        });
+    };
+
+    if (userAvatarFile) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            saveAvatar(event.target.result);
+        };
+        reader.readAsDataURL(userAvatarFile);
+    } else {
+        // If only the username is changed, no need to re-save the avatar
+        // as it's already in local storage.
+    }
+}
+
+function formatMcpServerSyncText(server) {
+    if (!server?.lastSyncedAt) {
+        return '尚未同步';
+    }
+    try {
+        return `上次同步 ${new Date(server.lastSyncedAt).toLocaleString()}`;
+    } catch (error) {
+        return '上次同步时间未知';
+    }
+}
+
+function buildEnhancedMcpServerListHtml(servers, selectedServerId) {
+    if (!Array.isArray(servers) || servers.length === 0) {
+        return '<div class="mcp-server-empty">当前还没有 MCP 服务</div>';
+    }
+
+    const escape = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    return servers.map((server) => {
+        const isActive = server.id === selectedServerId;
+        const statusClass = server.connected ? 'connected' : (server.lastError ? 'error' : 'idle');
+        const statusLabel = server.connected ? '在线' : (server.lastError ? '异常' : '未连接');
+        const syncText = formatMcpServerSyncText(server);
+        const errorText = server.lastError
+            ? `<div class="mcp-server-error">${escape(server.lastError)}</div>`
+            : '';
+
+        return `
+            <button type="button" class="mcp-server-item ${isActive ? 'active' : ''}" data-server-id="${escape(server.id)}">
+                <div class="mcp-server-item-head">
+                    <span class="mcp-server-name">${escape(server.name)}</span>
+                    <span class="mcp-server-status ${statusClass}">${statusLabel}</span>
+                </div>
+                <div class="mcp-server-item-meta">
+                    <span>${escape(server.transport)}</span>
+                    <span>工具 ${server.toolCount || 0}</span>
+                    <span>资源 ${server.resourceCount || 0}</span>
+                    <span>提示词 ${server.promptCount || 0}</span>
+                    <span>${server.enabled === false ? '已禁用' : '已启用'}</span>
+                </div>
+                <div class="mcp-server-sync">${escape(syncText)}</div>
+                ${errorText}
+            </button>
+        `;
+    }).join('');
+}
+
+function buildEnhancedMcpMetaText(servers, selectedServerId, summary) {
+    const selectedServer = Array.isArray(servers)
+        ? servers.find((server) => server.id === selectedServerId)
+        : null;
+
+    if (selectedServer) {
+        return [
+            selectedServer.name,
+            selectedServer.transport,
+            selectedServer.enabled === false ? '已禁用' : '已启用',
+            `工具 ${selectedServer.toolCount || 0}`,
+            `资源 ${selectedServer.resourceCount || 0}`,
+            `提示词 ${selectedServer.promptCount || 0}`,
+            formatMcpServerSyncText(selectedServer)
+        ].join(' · ');
+    }
+
+    return `已配置 ${Array.isArray(servers) ? servers.length : 0} 个 MCP 服务，工具 ${summary?.toolCount || 0} 个，资源 ${summary?.resourceCount || 0} 条，提示词 ${summary?.promptCount || 0} 个`;
+}
+
+async function refreshEnhancedMcpSettingsUi() {
+    const host = document.getElementById('mcp-settings-host');
+    if (!host) {
+        return;
+    }
+
+    const serverList = host.querySelector('#mcp-server-list');
+    const serverSelect = host.querySelector('#mcp-server-select');
+    const meta = host.querySelector('#mcp-server-meta');
+    if (!serverList || !serverSelect || !meta) {
+        return;
+    }
+
+    const response = await browser.runtime.sendMessage({ action: 'mcp.getState' });
+    if (!response?.success) {
+        return;
+    }
+
+    const payload = response.data || {};
+    const servers = Array.isArray(payload.servers) ? payload.servers : [];
+    const selectedServerId = serverSelect.value || '';
+
+    serverList.innerHTML = buildEnhancedMcpServerListHtml(servers, selectedServerId);
+    meta.textContent = buildEnhancedMcpMetaText(servers, selectedServerId, payload);
+
+    serverList.querySelectorAll('.mcp-server-item[data-server-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+            serverSelect.value = button.dataset.serverId || '';
+            serverSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            void refreshEnhancedMcpSettingsUi();
+        });
+    });
+}
+
+function enhanceMcpSettingsRuntime() {
+    const host = document.getElementById('mcp-settings-host');
+    if (!host || host.__mcpEnhancedRuntimeBound) {
+        return;
+    }
+
+    host.__mcpEnhancedRuntimeBound = true;
+
+    const refresh = () => {
+        void refreshEnhancedMcpSettingsUi();
+    };
+
+    const serverSelect = host.querySelector('#mcp-server-select');
+    const refreshBtn = host.querySelector('#mcp-refresh-tools-btn');
+    const testBtn = host.querySelector('#mcp-test-btn');
+    const saveBtn = host.querySelector('#mcp-save-btn');
+    const removeBtn = host.querySelector('#mcp-remove-btn');
+
+    serverSelect?.addEventListener('change', refresh);
+    refreshBtn?.addEventListener('click', () => setTimeout(refresh, 150));
+    testBtn?.addEventListener('click', () => setTimeout(refresh, 150));
+    saveBtn?.addEventListener('click', () => setTimeout(refresh, 150));
+    removeBtn?.addEventListener('click', () => setTimeout(refresh, 150));
+    window.addEventListener('infinpilot:mcp-changed', refresh);
+
+    if (host.__mcpEnhancedRefreshTimer) {
+        clearInterval(host.__mcpEnhancedRefreshTimer);
+    }
+    host.__mcpEnhancedRefreshTimer = setInterval(() => {
+        if (!document.hidden) {
+            refresh();
+        }
+    }, 10000);
+
+    refresh();
+}
+
+const initMcpSettingsRuntimeBase = initMcpSettingsRuntime;
+initMcpSettingsRuntime = async function initMcpSettingsRuntimeEnhanced(...args) {
+    await initMcpSettingsRuntimeBase(...args);
+    enhanceMcpSettingsRuntime();
+};

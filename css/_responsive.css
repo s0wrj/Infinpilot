@@ -1,4 +1,4 @@
-/* 包含 Pagetalk 插件的所有媒体查询，用于实现响应式布局调整。 */
+/* 包含 Infinpilot 插件的所有媒体查询，用于实现响应式布局调整。 */
 
 @media (max-width: 600px) {
     /* .tab {
@@ -45,17 +45,26 @@
 
     /* .message max-width already handled by 600px query */
 
-    .chat-input {
-        flex-wrap: wrap; /* Allow input elements to wrap */
+    .chat-input-area {
         padding: var(--spacing-xs);
     }
-    .chat-input textarea {
-        flex-basis: 100%; /* Textarea takes full width */
-        margin-bottom: var(--spacing-xs);
+    
+    .chat-input {
+        flex-wrap: wrap; /* Allow input elements to wrap */
     }
-    .chat-input button { /* Ensure buttons are reasonably sized */
-        margin-left: 0;
-        margin-right: var(--spacing-xs); /* Space between buttons if they wrap */
+    
+    .chat-input-field {
+        flex-basis: 100%; /* Textarea takes full width */
+        margin: var(--spacing-xs) 0;
+    }
+    
+    .chat-input-actions,
+    .chat-input-send {
+        border: none;
+    }
+    
+    .chat-input-send {
+        margin-left: auto;
     }
 
     .chat-model-selector label, .chat-agent-selector label {
@@ -79,9 +88,10 @@
 
 @media (min-width: 251px) and (max-width: 350px) {
     /* 窄侧边栏时的调整 (slightly wider than 250px) */
-    .chat-input {
+    .chat-input-area {
         padding: var(--spacing-xs);
     }
+    
     .welcome-message {
         padding: var(--spacing-md);
         width: clamp(170px, 90%, 50%); /* 稍微增加窄屏时的宽度 */

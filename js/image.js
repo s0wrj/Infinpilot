@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Image Handling Functions
+ * Infinpilot - Image Handling Functions
  */
 import { generateUniqueId, escapeHtml } from './utils.js';
 import { tr as _ } from './utils/i18n.js';

@@ -1,4 +1,4 @@
-/* 包含 Pagetalk 插件在深色模式（body.dark-mode）下覆盖默认样式的规则。 */
+/* 包含 Infinpilot 插件在深色模式（body.dark-mode）下覆盖默认样式的规则。 */
 
 /* --- 深色模式各组件调整 --- */
 
@@ -8,9 +8,9 @@ body.dark-mode .setting-group input[type="password"],
 body.dark-mode .setting-group input[type="number"],
 body.dark-mode .setting-group textarea,
 body.dark-mode .setting-group select,
-body.dark-mode .chat-input textarea,
 body.dark-mode .chat-model-selector select,
-body.dark-mode .chat-agent-selector select {
+body.dark-mode .chat-agent-selector select,
+body.dark-mode .chat-db-selector select {
     background-color: var(--input-background); /* 保持使用变量 */
     color: var(--text-color);
     border-color: var(--border-color);
@@ -18,7 +18,6 @@ body.dark-mode .chat-agent-selector select {
 body.dark-mode .setting-group input:focus,
 body.dark-mode .setting-group textarea:focus,
 body.dark-mode .setting-group select:focus,
-body.dark-mode .chat-input textarea:focus,
 body.dark-mode .chat-model-selector select:focus,
 body.dark-mode .chat-agent-selector select:focus {
     background-color: var(--card-background); /* 聚焦时使用卡片背景色，更亮 */
@@ -27,9 +26,38 @@ body.dark-mode .chat-agent-selector select:focus {
 }
 body.dark-mode .chat-input textarea {
     color: var(--text-color); 
+    background-color: transparent;
 }
 body.dark-mode .chat-input textarea::placeholder {
     color: var(--text-secondary);
+}
+
+/* 深色模式下的优雅边框线设计 */
+body.dark-mode .chat-input-wrapper {
+    border-color: var(--border-color);
+    background-color: rgba(24, 24, 27, 0.95);
+}
+
+body.dark-mode .chat-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+body.dark-mode .chat-input-field textarea {
+    color: var(--text-color);
+    background-color: transparent;
+}
+
+body.dark-mode .chat-input-field textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .chat-input-actions {
+    border-right-color: var(--border-color);
+}
+
+body.dark-mode .chat-input-send {
+    border-left-color: var(--border-color);
 }
 
 /* 代码块 */
@@ -140,7 +168,8 @@ body.dark-mode .quick-action-btn:hover {
 }
 /* General icon buttons and chat input buttons (non-send) */
 body.dark-mode .icon-btn:hover,
-body.dark-mode .upload-image-button:hover,
+body.dark-mode .upload-image-button,
+body.dark-mode .youtube-button,
 body.dark-mode .chat-input button:not(#send-message):hover {
      background-color: var(--button-hover-bg);
      color: var(--primary-color);
@@ -435,6 +464,11 @@ body.dark-mode .model-settings-group-box {
     border-color: var(--border-color);
 }
 
+/* Fix tool card background in dark mode */
+body.dark-mode .tool-call-card {
+    --bg-soft: var(--code-background);
+}
+
 /* 聊天状态消息 (内容提取等) */
 body.dark-mode .chat-status.success {
     background-color: rgba(52, 125, 57, 0.2);
@@ -451,25 +485,34 @@ body.dark-mode .hint a {
     color: var(--primary-color);
 }
 
-/* Draggable theme toggle button */
-body.dark-mode #theme-toggle-btn {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-body.dark-mode #theme-toggle-btn:active {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+/* 深色模式下的聊天输入区域 */
+body.dark-mode .chat-input-wrapper {
+    border-color: var(--border-color);
+    background-color: rgba(24, 24, 27, 0.95);
 }
 
-/* Changelog Modal */
-body.dark-mode .changelog-content {
-    background-color: var(--card-background);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+body.dark-mode .chat-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
-body.dark-mode .changelog-item {
-    border-bottom-color: var(--border-color);
+
+body.dark-mode .chat-input-field textarea {
+    color: var(--text-color);
+    background-color: transparent;
 }
-body.dark-mode .changelog-footer {
-    border-top-color: var(--border-color);
+
+body.dark-mode .chat-input-field textarea::placeholder {
+    color: var(--text-secondary);
 }
-body.dark-mode .changelog-ok-btn:hover {
-    background-color: var(--secondary-color);
+
+body.dark-mode .chat-input-actions {
+    border-right-color: var(--border-color);
+}
+
+body.dark-mode .chat-input-send {
+    border-left-color: var(--border-color);
+}
+
+body.dark-mode .chat-input-actions .icon-btn svg {
+    fill: white;
 }

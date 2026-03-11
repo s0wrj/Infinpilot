@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>项目预览</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<iframe id="viewer"></iframe>
+<script>
+    // 从 URL 获取 ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const tempId = urlParams.get('id');
+
+    if (tempId) {
+        // 从存储中读取 HTML 内容
+        browser.storage.local.get(`runHtml_${tempId}`).then((result) => {
+            const htmlContent = result[`runHtml_${tempId}`];
+            if (htmlContent) {
+                // 使用 iframe srcdoc 来加载内容，绕过 CSP
+                document.getElementById('viewer').srcdoc = htmlContent;
+            } else {
+                document.body.innerHTML = '<h1 style="padding:20px;color:#666;">项目内容已过期或不存在</h1>';
+            }
+        }).catch((err) => {
+            console.error('Error loading content:', err);
+            document.body.innerHTML = '<h1 style="padding:20px;color:#f00;">加载失败: ' + err.message + '</h1>';
+        });
+    } else {
+        document.body.innerHTML = '<h1 style="padding:20px;color:#666;">无效的项目 ID</h1>';
+    }
+</script>
+</body>
+</html>

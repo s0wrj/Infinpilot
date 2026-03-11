@@ -1,5 +1,5 @@
-/* Pagetalk 面板样式 */
-#pagetalk-panel-container {
+/* Infinpilot 面板样式 */
+#infinpilot-panel-container {
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
@@ -17,7 +17,7 @@
   background-color: white; /* 确保 iframe 容器本身有背景色，以便阴影正确显示 */
 }
 
-#pagetalk-panel-resizer {
+#infinpilot-panel-resizer {
   position: absolute;
   left: -4px; /* 让一部分resizer在面板外部，更容易拖动 */
   top: 0;
@@ -28,20 +28,20 @@
   /* background-color: rgba(0,0,0,0.01); */ /* 可选：给resizer一点视觉提示，但要确保不影响透明度 */
 }
 
-#pagetalk-panel-iframe {
+#infinpilot-panel-iframe {
   width: 100% !important;
   height: 100% !important;
   border: none;
 }
 
 /* 当面板打开时，给页面添加右侧边距 */
-body.pagetalk-panel-open {
+body.infinpilot-panel-open {
   /* margin-right 由 JS动态设置 */
   transition: margin-right 0.2s ease-out;
 }
 
 /* 新增：拖动时禁用页面其他元素事件的样式 */
-body.pagetalk-resizing-active {
+body.infinpilot-resizing-active {
   cursor: ew-resize !important;
   user-select: none !important;
   -webkit-user-select: none !important; /* Safari and Chrome */
@@ -49,11 +49,11 @@ body.pagetalk-resizing-active {
   -ms-user-select: none !important;     /* IE10+ */
 }
 
-body.pagetalk-resizing-active > *:not(#pagetalk-panel-container) {
+body.infinpilot-resizing-active > *:not(#infinpilot-panel-container) {
     pointer-events: none !important;
 }
 
 /* 针对PDF阅读器调整的辅助类 */
-.pagetalk-adjusted {
+.infinpilot-adjusted {
     transition: margin-right 0.2s ease-out, width 0.2s ease-out;
 }

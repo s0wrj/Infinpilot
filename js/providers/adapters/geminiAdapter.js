@@ -1,5 +1,5 @@
 /**
- * PageTalk - Gemini API 适配器
+ * InfinPilot - Gemini API 适配器
  *
  * 处理 Google Gemini API 的请求格式转换和响应解析
  */
@@ -26,6 +26,15 @@ export async function geminiAdapter(modelConfig, provider, providerSettings, mes
     
     // 转换消息格式为 Gemini 格式
     const contents = convertMessagesToGeminiFormat(messages);
+
+    // Gemini API 要求 `contents` 字段为非空数组。
+    // 在发送请求前增加此校验，可防止因传入空消息而导致的 API 错误。
+    if (!contents || contents.length === 0) {
+        // 如果没有有效内容可发送，则不应调用 API。
+        // 这可能发生在输入 `messages` 数组为空，或只包含转换后为 null 的消息时。
+        console.error('[GeminiAdapter] Aborting API call: `contents` array is empty. Input messages:', messages);
+        throw new Error('Cannot call Gemini API with empty contents. Please provide at least one valid message.');
+    }
     
     // 构建请求体
     const requestBody = {
@@ -43,6 +52,18 @@ export async function geminiAdapter(modelConfig, provider, providerSettings, mes
     // 应用模型特定参数
     if (params?.generationConfig) {
         Object.assign(requestBody.generationConfig, params.generationConfig);
+    }
+
+    // Add tools if they exist in options
+    if (options.tools) {
+        const dict = (typeof getCurrentTranslations === 'function') ? getCurrentTranslations() : null;
+        requestBody.tools = [{
+            functionDeclarations: options.tools.map(tool => ({
+                name: tool.name,
+                description: (dict && dict[tool.description]) || tool.description,
+                parameters: tool.inputSchema
+            }))
+        }];
     }
     
     // 添加系统指令（如果有）
@@ -69,7 +90,7 @@ export async function geminiAdapter(modelConfig, provider, providerSettings, mes
         }
         
         // 处理流式响应
-        await processGeminiStreamResponse(response, streamCallback);
+        return await processGeminiStreamResponse(response, streamCallback);
         
     } catch (error) {
         // 检查是否是用户主动中断的请求
@@ -93,25 +114,42 @@ export async function geminiAdapter(modelConfig, provider, providerSettings, mes
  */
 function convertMessagesToGeminiFormat(messages) {
     return messages.map(message => {
+        if (message.role === 'tool') {
+            // Pass tool responses through directly
+            return {
+                role: 'tool',
+                parts: message.parts
+            };
+        }
+
         const role = message.role === 'assistant' ? 'model' : 'user';
         
-        // 处理文本内容
-        const parts = [{ text: message.content }];
+        // Handle text content, ensuring it's not undefined
+        const parts = message.content ? [{ text: message.content }] : [];
         
-        // 处理图片（如果有）
+        // Handle images (if any)
         if (message.images && message.images.length > 0) {
             message.images.forEach(image => {
                 parts.push({
                     inlineData: {
                         mimeType: image.mimeType,
-                        data: image.dataUrl.split(',')[1] // 移除 data:image/...;base64, 前缀
+                        data: image.dataUrl.split(',')[1] // Remove data:image/...;base64, prefix
                     }
                 });
             });
         }
         
+        // Ensure parts is not empty
+        if (parts.length === 0) {
+            // If there's no content and no images, we might need a default empty text part
+            // depending on API requirements, but for now, we can skip the message
+            // or return a part with empty text if the API requires it.
+            // Let's assume we can't send a message with empty parts.
+            return null;
+        }
+
         return { role, parts };
-    });
+    }).filter(Boolean); // Filter out any null messages
 }
 
 /**
@@ -122,56 +160,77 @@ function convertMessagesToGeminiFormat(messages) {
 async function processGeminiStreamResponse(response, streamCallback) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = ''; // 用于缓存不完整的数据
+    let buffer = '';
+    let accumulatedText = '';
+    let toolCalls = []; // Changed from functionCalls to toolCalls
 
     try {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            // 将新数据添加到缓冲区
             buffer += decoder.decode(value, { stream: true });
-
-            // 按行分割，保留最后一个可能不完整的行
             const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const jsonStr = line.slice(6).trim();
                     if (jsonStr === '[DONE]') {
-                        // 流式输出结束
-                        if (streamCallback) {
-                            streamCallback('', true);
-                        }
-                        return;
+                        if (streamCallback) streamCallback('', true);
+                        return { text: accumulatedText, toolCalls }; // Changed from functionCalls
                     }
-
-                    // 跳过空的数据行
-                    if (!jsonStr) {
-                        continue;
-                    }
+                    if (!jsonStr) continue;
 
                     try {
                         const data = JSON.parse(jsonStr);
-                        const candidates = data.candidates;
+                        const parts = data.candidates?.[0]?.content?.parts;
+                        if (!parts || !Array.isArray(parts)) continue;
 
-                        if (candidates && candidates.length > 0) {
-                            const candidate = candidates[0];
-                            const content = candidate.content;
+                        for (const part of parts) {
+                            if (part.text) {
+                                let textToStream = part.text;
+                                const toolCodeRegex = /<tool_code>([\s\S]*?)<\/tool_code>/g;
+                                let match;
 
-                            if (content && content.parts && content.parts.length > 0) {
-                                const text = content.parts[0].text || '';
+                                while ((match = toolCodeRegex.exec(part.text)) !== null) {
+                                    const toolCodeContent = match[1].trim();
+                                    textToStream = textToStream.replace(match[0], ''); // Remove the tool_code block
 
-                                // 调用流式回调 - 修复：使用正确的参数格式 (chunk, isComplete)
-                                if (streamCallback) {
-                                    streamCallback(text, false);
+                                    try {
+                                        const functionCallMatch = toolCodeContent.match(/^([a-zA-Z0-9_]+)\s*\(([\s\S]*)\)\s*$/);
+
+                                        if (functionCallMatch) {
+                                            const functionName = functionCallMatch[1];
+                                            const argsString = functionCallMatch[2].trim();
+                                            const args = argsString ? JSON.parse(argsString) : {};
+
+                                            toolCalls.push({
+                                                name: functionName,
+                                                args: args
+                                            });
+                                        } else {
+                                            console.warn('[GeminiAdapter] Could not parse tool code format:', toolCodeContent);
+                                        }
+                                    } catch (e) {
+                                        console.error('[GeminiAdapter] Error parsing tool code arguments JSON:', e, 'Arguments string:', functionCallMatch ? functionCallMatch[2] : 'N/A');
+                                    }
+                                }
+
+                                if (textToStream) {
+                                    accumulatedText += textToStream;
+                                    if (streamCallback) streamCallback(textToStream, false);
+                                }
+                            } else if (part.functionCall) {
+                                if (part.functionCall.name && part.functionCall.args) {
+                                    toolCalls.push(part.functionCall); // Changed from functionCalls
+                                } else {
+                                    console.warn('Ignoring malformed functionCall from API:', part.functionCall);
                                 }
                             }
                         }
                     } catch (parseError) {
-                        // 只在调试模式下显示详细错误，避免控制台噪音
-                        if (jsonStr.length > 10) { // 只记录看起来像有效JSON但解析失败的情况
+                        if (jsonStr.length > 10) {
                             console.debug('[GeminiAdapter] Failed to parse SSE data:', parseError.message, 'Data:', jsonStr.substring(0, 100));
                         }
                     }
@@ -179,32 +238,25 @@ async function processGeminiStreamResponse(response, streamCallback) {
             }
         }
 
-        // 处理缓冲区中剩余的数据
         if (buffer.trim()) {
             const line = buffer.trim();
             if (line.startsWith('data: ')) {
                 const jsonStr = line.slice(6).trim();
-                if (jsonStr === '[DONE]') {
-                    if (streamCallback) {
-                        streamCallback('', true);
-                    }
-                    return;
-                }
-
-                if (jsonStr) {
+                if (jsonStr && jsonStr !== '[DONE]') {
                     try {
                         const data = JSON.parse(jsonStr);
-                        const candidates = data.candidates;
-
-                        if (candidates && candidates.length > 0) {
-                            const candidate = candidates[0];
-                            const content = candidate.content;
-
-                            if (content && content.parts && content.parts.length > 0) {
-                                const text = content.parts[0].text || '';
-                                if (streamCallback) {
-                                    streamCallback(text, false);
-                                }
+                        const part = data.candidates?.[0]?.content?.parts?.[0];
+                        if (part?.text) {
+                            const cleanedText = part.text.replace(/<tool_code>([\s\S]*?)<\/tool_code>/g, '');
+                            if (cleanedText) {
+                                accumulatedText += cleanedText;
+                                if (streamCallback) streamCallback(cleanedText, false);
+                            }
+                        } else if (part?.functionCall) {
+                            if (part.functionCall.name && part.functionCall.args) {
+                                toolCalls.push(part.functionCall); // Changed from functionCalls
+                            } else {
+                                console.warn('Ignoring malformed functionCall from API:', part.functionCall);
                             }
                         }
                     } catch (parseError) {
@@ -214,10 +266,8 @@ async function processGeminiStreamResponse(response, streamCallback) {
             }
         }
 
-        // 如果循环正常结束（没有遇到 [DONE]），也要调用完成回调
-        if (streamCallback) {
-            streamCallback('', true);
-        }
+        if (streamCallback) streamCallback('', true);
+        return { text: accumulatedText, toolCalls }; // Changed from functionCalls
     } finally {
         reader.releaseLock();
     }

@@ -1,4 +1,4 @@
-/* Pagetalk 侧边栏主样式表 - 导入模块化的 CSS 文件 */
+/* Infinpilot 侧边栏主样式表 - 导入模块化的 CSS 文件 */
 
 /* 导入 CSS 变量定义 */
 @import url("_variables.css");
@@ -16,5 +16,7 @@
 @import url("_dark-mode.css");
 /* 导入响应式布局样式 */
 @import url("_responsive.css");
+/* 导入历史记录弹窗样式 */
+@import url("_history.css");
 
 /* 如果有非常少量的全局覆盖或工具类可以在此定义，但优先使用模块。 */

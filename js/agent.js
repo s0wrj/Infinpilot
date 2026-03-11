@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Agent Management Functions
+ * Infinpilot - Agent Management Functions
  */
 import { generateUniqueId } from './utils.js';
 import { tr as _ } from './utils/i18n.js';
@@ -22,7 +22,7 @@ const defaultAgentSettings = {
  * @param {object} currentTranslations - Translations object
  */
 export function loadAgents(state, updateAgentsListCallback, updateAgentSelectionInChatCallback, saveCurrentAgentIdCallback, currentTranslations) {
-    chrome.storage.sync.get(['agents', 'currentAgentId'], (result) => {
+    browser.storage.sync.get(['agents', 'currentAgentId'], (result) => {
         console.log('Storage get result:', result); // Add logging
         if (result.agents && Array.isArray(result.agents) && result.agents.length > 0) {
             state.agents = result.agents;
@@ -288,7 +288,7 @@ export function autoSaveAgentSettings(agentId, agentItemElement, state, saveAgen
     }
 
     // Save the entire list
-    saveAgentsListCallback(); // This will eventually call chrome.storage.sync.set
+    saveAgentsListCallback(); // This will eventually call browser.storage.sync.set
 
     // Update UI elements
     const nameSpanInHeader = agentItemElement.querySelector('.agent-item-header .agent-item-name');
@@ -490,12 +490,12 @@ export function updateAgentSelectionInChat(state, elements, currentTranslations)
  * @param {object} state - Global state reference
  */
 export function saveAgentsList(state) {
-    chrome.storage.sync.set({
+    browser.storage.sync.set({
         agents: state.agents,
         currentAgentId: state.currentAgentId
     }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving agents list:", chrome.runtime.lastError);
+        if (browser.runtime.lastError) {
+            console.error("Error saving agents list:", browser.runtime.lastError);
             // Optionally show an error toast
         } else {
             console.log("Agents list saved to storage.", state.agents);
@@ -508,9 +508,9 @@ export function saveAgentsList(state) {
  * @param {object} state - Global state reference
  */
 export function saveCurrentAgentId(state) {
-    chrome.storage.sync.set({ currentAgentId: state.currentAgentId }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving current agent ID:", chrome.runtime.lastError);
+    browser.storage.sync.set({ currentAgentId: state.currentAgentId }, () => {
+        if (browser.runtime.lastError) {
+            console.error("Error saving current agent ID:", browser.runtime.lastError);
         } else {
             // console.log("Current agent ID saved.");
         }
@@ -539,7 +539,7 @@ export function handleAgentExport(state, showToastCallback, currentTranslations)
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `pagetalk_agents_${timestamp}.json`;
+        const filename = `infinpilot_agents_${timestamp}.json`;
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;

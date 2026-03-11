@@ -1,5 +1,5 @@
 /**
- * PageTalk - Quick Actions Manager
+ * InfinPilot - Quick Actions Manager
  * 快捷操作数据管理模块
  */
 
@@ -48,14 +48,16 @@ function getDefaultQuickActions() {
             name: getTranslation('defaultQuickActionSummarize'),
             prompt: getTranslation('defaultQuickActionSummarizePrompt'),
             ignoreAssistant: false,
-            order: 0
+            order: 0,
+            pinned: false
         },
         {
             id: 'default-mermaid',
             name: getTranslation('defaultQuickActionMermaid'),
             prompt: getTranslation('defaultQuickActionMermaidPrompt'),
             ignoreAssistant: true,
-            order: 1
+            order: 1,
+            pinned: false
         }
     ];
 }
@@ -90,9 +92,9 @@ export async function initQuickActionsManager() {
  */
 async function loadQuickActions() {
     return new Promise((resolve) => {
-        chrome.storage.local.get(['quickActions'], (result) => {
-            if (chrome.runtime.lastError) {
-                console.error('[QuickActionsManager] Load error:', chrome.runtime.lastError);
+        browser.storage.local.get(['quickActions'], (result) => {
+            if (browser.runtime.lastError) {
+                console.error('[QuickActionsManager] Load error:', browser.runtime.lastError);
                 resolve({ isFirstTime: true });
                 return;
             }
@@ -115,7 +117,8 @@ async function loadQuickActions() {
                     name: action.name || '未命名操作',
                     prompt: action.prompt || '',
                     ignoreAssistant: action.ignoreAssistant || false,
-                    order: action.order || 0
+                    order: action.order || 0,
+                    pinned: action.pinned || false
                 }));
 
                 // 按order排序
@@ -139,9 +142,9 @@ async function loadQuickActions() {
  */
 async function saveQuickActions() {
     return new Promise((resolve) => {
-        chrome.storage.local.set({ quickActions: currentQuickActions }, () => {
-            if (chrome.runtime.lastError) {
-                console.error('[QuickActionsManager] Save error:', chrome.runtime.lastError);
+        browser.storage.local.set({ quickActions: currentQuickActions }, () => {
+            if (browser.runtime.lastError) {
+                console.error('[QuickActionsManager] Save error:', browser.runtime.lastError);
                 resolve(false);
                 return;
             }
@@ -199,7 +202,8 @@ export async function addQuickAction(actionData) {
         name: actionData.name || '未命名操作',
         prompt: actionData.prompt || '',
         ignoreAssistant: actionData.ignoreAssistant || false,
-        order: currentQuickActions.actions.length
+        order: currentQuickActions.actions.length,
+        pinned: actionData.pinned || false
     };
     
     currentQuickActions.actions.push(newAction);
@@ -229,6 +233,7 @@ export async function updateQuickAction(id, actionData) {
     if (actionData.name !== undefined) action.name = actionData.name;
     if (actionData.prompt !== undefined) action.prompt = actionData.prompt;
     if (actionData.ignoreAssistant !== undefined) action.ignoreAssistant = actionData.ignoreAssistant;
+    if (actionData.pinned !== undefined) action.pinned = actionData.pinned;
     
     const success = await saveQuickActions();
     
@@ -339,7 +344,8 @@ export async function importQuickActions(importData, mode = 'merge') {
                         name: actionData.name || '导入的操作',
                         prompt: actionData.prompt || '',
                         ignoreAssistant: actionData.ignoreAssistant || false,
-                        order: currentQuickActions.actions.length
+                        order: currentQuickActions.actions.length,
+                        pinned: false
                     };
                     currentQuickActions.actions.push(newAction);
                     addedCount++;
@@ -359,7 +365,8 @@ export async function importQuickActions(importData, mode = 'merge') {
                         name: actionData.name || '导入的操作',
                         prompt: actionData.prompt || '',
                         ignoreAssistant: actionData.ignoreAssistant || false,
-                        order: currentQuickActions.actions.length + newActions.length
+                        order: currentQuickActions.actions.length + newActions.length,
+                        pinned: false
                     };
                     newActions.push(newAction);
                 }
@@ -419,10 +426,9 @@ export async function updateDefaultActionsTranslations() {
     currentQuickActions.actions.forEach(action => {
         const defaultAction = defaultActions.find(def => def.id === action.id);
         if (defaultAction) {
-            // 只更新名称和提示词，保留用户可能修改的其他设置
-            if (action.name !== defaultAction.name || action.prompt !== defaultAction.prompt) {
+            // 只更新名称，保留用户可能修改的其他设置（特别是提示词）
+            if (action.name !== defaultAction.name) {
                 action.name = defaultAction.name;
-                action.prompt = defaultAction.prompt;
                 hasUpdates = true;
             }
         }

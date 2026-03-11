@@ -1,5 +1,5 @@
 /**
- * PageTalk - Proxy Health Utilities
+ * InfinPilot - Proxy Health Utilities
  * 从 provider 配置集中派生健康检查与测试端点
  */
 
@@ -11,6 +11,18 @@
 function toBaseEndpoint(apiHost) {
   const base = String(apiHost || '').replace(/\/$/, '');
   return `${base}/`;
+}
+
+function getExtensionStorage() {
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    return chrome.storage;
+  }
+
+  if (typeof browser !== 'undefined' && browser.storage) {
+    return browser.storage;
+  }
+
+  return null;
 }
 
 /**
@@ -41,11 +53,12 @@ export function getHealthCheckEndpoints(providersMap) {
  */
 export async function getHealthCheckEndpointsAsync(providersMap) {
   const endpoints = new Set(getHealthCheckEndpoints(providersMap));
+  const storage = getExtensionStorage();
 
   // 合并自定义提供商
   try {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-      const result = await chrome.storage.sync.get(['customProviders']);
+    if (storage && storage.sync) {
+      const result = await storage.sync.get(['customProviders']);
       if (result.customProviders && Array.isArray(result.customProviders)) {
         result.customProviders.forEach(p => {
           if (p && p.apiHost) {

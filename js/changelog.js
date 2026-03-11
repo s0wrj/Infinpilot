@@ -5,32 +5,6 @@
 // 更新日志记录，按照时间倒序排列
 const changelog = [
     {
-        version: '3.8.0',
-        date: '2025-09-11',
-        changes: {
-            'zh-CN': [
-                '1. 为内置供应商加上了自定义 Base URL'
-            ],
-            'en': [
-                '1. Added custom Base URL for built-in providers.'
-            ]
-        }
-    },
-    {
-        version: '3.7.9',
-        date: '2025-09-06',
-        changes: {
-            'zh-CN': [
-                '1. 去除 topP 参数，改为默认值，避免模型不支持。',
-                '2. 优化欢迎消息的交互。'
-            ],
-            'en': [
-                '1. Removed topP parameter; use default to avoid unsupported models.',
-                '2. Improved welcome message interactions.'
-            ]
-        }
-    },
-    {
         version: "3.7.8",
         date: "2025-09-04",
         changes: {
@@ -253,13 +227,13 @@ const changelog = [
         date: "2025-06-16",
         changes: {
             "zh-CN": [
-                "1. 划词助手：现在你可以尝试这个非常牛逼的功能，划词→选择解读、翻译或对话，又或者是自定义你自己的选项，PageTalk不再仅仅是个侧栏AI插件。",
+                "1. 划词助手：现在你可以尝试这个非常牛逼的功能，划词→选择解读、翻译或对话，又或者是自定义你自己的选项，InfinPilot不再仅仅是个侧栏AI插件。",
                 "2. 更新http, socks5代理支持",
                 "3. 修复一些小bug",
                 "备注：如果遇到任何问题，请先尝试刷新网页、刷新插件或重启浏览器，若仍存在，请联系kronos13v@gmail.com"
             ],
             "en": [
-                "1. Text Selection Helper: Try this amazing new feature! Select text → choose interpret, translate, or chat, or customize your own options. PageTalk is no longer just a sidebar AI extension.",
+                "1. Text Selection Helper: Try this amazing new feature! Select text → choose interpret, translate, or chat, or customize your own options. InfinPilot is no longer just a sidebar AI extension.",
                 "2. Updated HTTP and SOCKS5 proxy support",
                 "3. Fixed various minor bugs",
                 "Note: If you encounter any issues, please try refreshing the webpage, reloading the extension, or restarting the browser first. If problems persist, contact kronos13v@gmail.com"
@@ -297,12 +271,12 @@ const changelog = [
         date: "2025-05-25",
         changes: {
             "zh-CN": [
-                "新增pdf解析功能（在线，非本地pdf），现在可以在网页中的pdf和PageTalk对话",
+                "新增pdf解析功能（在线，非本地pdf），现在可以在网页中的pdf和InfinPilot对话",
                 "聊天界面的小幅优化",
                 "修复了agent的删除bug"
             ],
             "en": [
-                "Added PDF parsing feature (online, not local), now you can chat with PageTalk in web PDFs",
+                "Added PDF parsing feature (online, not local), now you can chat with InfinPilot in web PDFs",
                 "Minor UI optimizations in chat interface",
                 "Fixed agent deletion bug"
             ]
@@ -365,7 +339,7 @@ function initChangelog() {
             // 如果有新版本且用户没有选择不再显示该版本的更新
             const shouldShowChangelog = shouldShowChangelogModal(lastViewedVersion);
             
-            if (shouldShowChangelog) {
+            if (false) {
                 // 设置语言（在填充内容之前）
                 setupLanguage();
                 

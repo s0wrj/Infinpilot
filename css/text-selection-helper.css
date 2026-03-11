@@ -1,17 +1,17 @@
 /**
- * Pagetalk - Text Selection Helper Styles
+ * Infinpilot - Text Selection Helper Styles
  * 划词助手样式
  */
 
 /* 基础样式重置 */
-.pagetalk-selection-helper * {
+.infinpilot-selection-helper * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
 /* Mini Icon 样式 (改为 absolute 定位) */
-.pagetalk-mini-icon {
+.infinpilot-mini-icon {
     position: absolute; /* 改动：从 fixed 改为 absolute */
     z-index: 2147483646;
     width: 32px;
@@ -29,19 +29,19 @@
     user-select: none;
 }
 
-.pagetalk-mini-icon:hover {
+.infinpilot-mini-icon:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.pagetalk-mini-icon img {
+.infinpilot-mini-icon img {
     width: 20px;
     height: 20px;
     pointer-events: none;
 }
 
 /* 选项栏样式 (改为 absolute 定位) */
-.pagetalk-options-bar {
+.infinpilot-options-bar {
     position: absolute; /* 改动：从 fixed 改为 absolute */
     z-index: 2147483647;
     background: rgba(255, 255, 255, 0.9);
@@ -62,7 +62,7 @@
 }
 
 /* 选项栏图标 */
-.pagetalk-options-bar-icon {
+.infinpilot-options-bar-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -70,7 +70,7 @@
 }
 
 /* 选项网格容器 */
-.pagetalk-options-grid {
+.infinpilot-options-grid {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -80,7 +80,7 @@
 }
 
 /* 选项行 */
-.pagetalk-options-row {
+.infinpilot-options-row {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -89,7 +89,7 @@
 }
 
 /* 添加选项按钮 */
-.pagetalk-add-option-btn {
+.infinpilot-add-option-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,13 +105,13 @@
     color: #4c6ef5;
 }
 
-.pagetalk-add-option-btn:hover {
+.infinpilot-add-option-btn:hover {
     background: rgba(76, 110, 245, 0.2);
     border-color: rgba(76, 110, 245, 0.4);
     transform: translateY(-1px);
 }
 
-.pagetalk-options-bar-icon {
+.infinpilot-options-bar-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -120,12 +120,12 @@
     margin-right: 4px;
 }
 
-.pagetalk-options-bar-icon img {
+.infinpilot-options-bar-icon img {
     width: 16px;
     height: 16px;
 }
 
-.pagetalk-option {
+.infinpilot-option {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -141,12 +141,12 @@
     min-width: 0;
 }
 
-.pagetalk-option:hover {
+.infinpilot-option:hover {
     background: rgba(0, 0, 0, 0.05);
     transform: translateY(-1px);
 }
 
-.pagetalk-option-icon {
+.infinpilot-option-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,12 +155,12 @@
     color: #666;
 }
 
-.pagetalk-option-text {
+.infinpilot-option-text {
     font-weight: 500;
 }
 
 /* 功能窗口样式 */
-.pagetalk-function-window {
+.infinpilot-function-window {
     position: fixed;
     z-index: 2147483647;
     background: rgba(255, 255, 255, 0.95);
@@ -187,7 +187,7 @@
  * These variables mimic the main panel's theme to ensure consistent styling
  * for markdown and code blocks, which are rendered in the host page's DOM.
  */
-.pagetalk-function-window {
+.infinpilot-function-window {
     /* Light Mode Variables (Default) */
     --primary-color: #4674ff;
     --text-color: #343a40e5;
@@ -212,73 +212,73 @@
 
 /*
  * Scoped Markdown and Code Highlighting Styles.
- * All selectors are prefixed with `.pagetalk-function-window` to prevent conflicts
+ * All selectors are prefixed with `.infinpilot-function-window` to prevent conflicts
  * with the host webpage's styles. These styles are copied and adapted from
  * _markdown.css and github.min.css (light theme only).
  */
 
 /* Scoped Markdown Styles from _markdown.css */
-.pagetalk-function-window .markdown-rendered h1,
-.pagetalk-function-window .markdown-rendered h2,
-.pagetalk-function-window .markdown-rendered h3,
-.pagetalk-function-window .markdown-rendered h4,
-.pagetalk-function-window .markdown-rendered h5,
-.pagetalk-function-window .markdown-rendered h6 {
+.infinpilot-function-window .markdown-rendered h1,
+.infinpilot-function-window .markdown-rendered h2,
+.infinpilot-function-window .markdown-rendered h3,
+.infinpilot-function-window .markdown-rendered h4,
+.infinpilot-function-window .markdown-rendered h5,
+.infinpilot-function-window .markdown-rendered h6 {
     margin-top: 1em;
     margin-bottom: 0.5em;
     line-height: 1.3;
     color: var(--text-color);
 }
 
-.pagetalk-function-window .markdown-rendered ul,
-.pagetalk-function-window .markdown-rendered ol {
+.infinpilot-function-window .markdown-rendered ul,
+.infinpilot-function-window .markdown-rendered ol {
     margin: 0.6em 0;
     padding-left: 1.8em;
 }
 
-.pagetalk-function-window .markdown-rendered li {
+.infinpilot-function-window .markdown-rendered li {
     margin-bottom: 0.4em;
 }
 
 /* 基础段落样式 - 与主面板保持一致 */
-.pagetalk-function-window .markdown-rendered p {
+.infinpilot-function-window .markdown-rendered p {
     margin-top: 0;
     margin-bottom: 0.6em; /* 与主面板 .bot-message p 保持一致的段落间距 */
     line-height: 1.4;
 }
 
-.pagetalk-function-window .markdown-rendered p:last-child {
+.infinpilot-function-window .markdown-rendered p:last-child {
     margin-bottom: 0;
 }
 
-.pagetalk-function-window .markdown-rendered p + p::before {
+.infinpilot-function-window .markdown-rendered p + p::before {
     content: none;
     display: none;
     height: 0;
 }
 
-.pagetalk-function-window .markdown-rendered li p {
+.infinpilot-function-window .markdown-rendered li p {
     margin: 0.3em 0;
 }
 
-.pagetalk-function-window .markdown-rendered p + ul,
-.pagetalk-function-window .markdown-rendered p + ol {
+.infinpilot-function-window .markdown-rendered p + ul,
+.infinpilot-function-window .markdown-rendered p + ol {
     margin-top: 0.4em;
 }
 
-.pagetalk-function-window .markdown-rendered ul + p,
-.pagetalk-function-window .markdown-rendered ol + p {
+.infinpilot-function-window .markdown-rendered ul + p,
+.infinpilot-function-window .markdown-rendered ol + p {
     margin-top: 0.6em;
 }
 
-.pagetalk-function-window .markdown-rendered h1 + p,
-.pagetalk-function-window .markdown-rendered h2 + p,
-.pagetalk-function-window .markdown-rendered h3 + p,
-.pagetalk-function-window .markdown-rendered h4 + p {
+.infinpilot-function-window .markdown-rendered h1 + p,
+.infinpilot-function-window .markdown-rendered h2 + p,
+.infinpilot-function-window .markdown-rendered h3 + p,
+.infinpilot-function-window .markdown-rendered h4 + p {
     margin-top: 0.3em;
 }
 
-.pagetalk-function-window .markdown-rendered .table-container {
+.infinpilot-function-window .markdown-rendered .table-container {
     width: 100%;
     overflow-x: auto;
     margin: 0.8em 0;
@@ -287,21 +287,21 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-function-window .markdown-rendered table {
+.infinpilot-function-window .markdown-rendered table {
     border-collapse: collapse;
     margin: 0;
     width: 100%;
     font-size: 0.9em;
 }
 
-.pagetalk-function-window .markdown-rendered thead {
+.infinpilot-function-window .markdown-rendered thead {
     background-color: var(--table-header-bg);
     color: var(--text-color);
     text-align: left;
 }
 
 
-.pagetalk-function-window .markdown-rendered th {
+.infinpilot-function-window .markdown-rendered th {
     font-weight: 600;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
@@ -310,21 +310,21 @@
     white-space: pre-wrap;
 }
 
-.pagetalk-function-window .markdown-rendered td {
+.infinpilot-function-window .markdown-rendered td {
     padding: 6px 10px;
     border: 1px solid var(--border-color);
     white-space: pre-wrap;
 }
 
-.pagetalk-function-window .markdown-rendered tr:not(:last-child) {
+.infinpilot-function-window .markdown-rendered tr:not(:last-child) {
     border-bottom: 1px solid var(--border-color);
 }
 
-.pagetalk-function-window .markdown-rendered tr:nth-child(even) {
+.infinpilot-function-window .markdown-rendered tr:nth-child(even) {
     background-color: var(--table-even-row-bg);
 }
 
-.pagetalk-function-window .markdown-rendered pre {
+.infinpilot-function-window .markdown-rendered pre {
     background-color: var(--code-background);
     border-radius: 4px; /* --radius-sm */
     padding: 0.8em 1em;
@@ -335,7 +335,7 @@
     border-left: 3px solid var(--primary-color);
 }
 
-.pagetalk-function-window .markdown-rendered pre code {
+.infinpilot-function-window .markdown-rendered pre code {
     background-color: transparent !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -350,16 +350,16 @@
     word-break: break-word;
 }
 
-.pagetalk-function-window .markdown-rendered a {
+.infinpilot-function-window .markdown-rendered a {
     color: var(--link-color);
     text-decoration: underline;
 }
 
-.pagetalk-function-window .markdown-rendered a:hover {
+.infinpilot-function-window .markdown-rendered a:hover {
     text-decoration: none;
 }
 
-.pagetalk-function-window .markdown-rendered blockquote {
+.infinpilot-function-window .markdown-rendered blockquote {
     border-left: 4px solid var(--primary-color);
     margin: 0.7em 0;
     padding: 0.4em 0.8em;
@@ -367,17 +367,17 @@
     background-color: var(--blockquote-bg);
 }
 
-.pagetalk-function-window .markdown-rendered blockquote > :first-child {
+.infinpilot-function-window .markdown-rendered blockquote > :first-child {
     margin-top: 0;
 }
 
-.pagetalk-function-window .markdown-rendered blockquote > :last-child {
+.infinpilot-function-window .markdown-rendered blockquote > :last-child {
     margin-bottom: 0;
 }
 
 /* 确保斜体文本保持原本样式，不应用引用样式 */
-.pagetalk-function-window .markdown-rendered em,
-.pagetalk-function-window .markdown-rendered i {
+.infinpilot-function-window .markdown-rendered em,
+.infinpilot-function-window .markdown-rendered i {
     font-style: italic;
     color: inherit;
     background: none;
@@ -386,7 +386,7 @@
     margin: 0;
 }
 
-.pagetalk-function-window .markdown-rendered hr {
+.infinpilot-function-window .markdown-rendered hr {
     height: 1px;
     padding: 0;
     margin: 1em 0;
@@ -394,7 +394,7 @@
     border: 0;
 }
 
-.pagetalk-function-window .markdown-rendered code:not(pre code) {
+.infinpilot-function-window .markdown-rendered code:not(pre code) {
     background-color: var(--inline-code-bg);
     border-radius: 4px;
     font-family: Consolas, 'SFMono-Regular', 'Liberation Mono', Menlo, Courier, monospace;
@@ -408,23 +408,23 @@
 }
 
 /* Scoped Code Highlighting Styles (支持深色模式) */
-.pagetalk-function-window pre code.hljs { display: block; overflow-x: auto; padding: 1em; }
-.pagetalk-function-window code.hljs { padding: 3px 5px; }
-.pagetalk-function-window .hljs { color: var(--code-text-color); background: var(--code-background); }
-.pagetalk-function-window .hljs-doctag, .pagetalk-function-window .hljs-keyword, .pagetalk-function-window .hljs-meta .hljs-keyword, .pagetalk-function-window .hljs-template-tag, .pagetalk-function-window .hljs-template-variable, .pagetalk-function-window .hljs-type, .pagetalk-function-window .hljs-variable.language_ { color: #d73a49; }
-.pagetalk-function-window .hljs-title, .pagetalk-function-window .hljs-title.class_, .pagetalk-function-window .hljs-title.class_.inherited__, .pagetalk-function-window .hljs-title.function_ { color: #6f42c1; }
-.pagetalk-function-window .hljs-attr, .pagetalk-function-window .hljs-attribute, .pagetalk-function-window .hljs-literal, .pagetalk-function-window .hljs-meta, .pagetalk-function-window .hljs-number, .pagetalk-function-window .hljs-operator, .pagetalk-function-window .hljs-variable, .pagetalk-function-window .hljs-selector-attr, .pagetalk-function-window .hljs-selector-class, .pagetalk-function-window .hljs-selector-id { color: #005cc5; }
-.pagetalk-function-window .hljs-regexp, .pagetalk-function-window .hljs-string, .pagetalk-function-window .hljs-meta .hljs-string { color: #032f62; }
-.pagetalk-function-window .hljs-built_in, .pagetalk-function-window .hljs-symbol { color: #e36209; }
-.pagetalk-function-window .hljs-code, .pagetalk-function-window .hljs-comment, .pagetalk-function-window .hljs-formula { color: #6a737d; }
-.pagetalk-function-window .hljs-name, .pagetalk-function-window .hljs-quote, .pagetalk-function-window .hljs-selector-tag, .pagetalk-function-window .hljs-selector-pseudo { color: #22863a; }
-.pagetalk-function-window .hljs-subst { color: #24292e; }
-.pagetalk-function-window .hljs-section { color: #005cc5; font-weight: bold; }
-.pagetalk-function-window .hljs-bullet { color: #735c0f; }
-.pagetalk-function-window .hljs-emphasis { color: #24292e; font-style: italic; }
-.pagetalk-function-window .hljs-strong { color: #24292e; font-weight: bold; }
-.pagetalk-function-window .hljs-addition { color: #22863a; background-color: var(--success-bg, #f0fff4); }
-.pagetalk-function-window .hljs-deletion { color: #b31d28; background-color: var(--error-bg, #ffeef0); }
+.infinpilot-function-window pre code.hljs { display: block; overflow-x: auto; padding: 1em; }
+.infinpilot-function-window code.hljs { padding: 3px 5px; }
+.infinpilot-function-window .hljs { color: var(--code-text-color); background: var(--code-background); }
+.infinpilot-function-window .hljs-doctag, .infinpilot-function-window .hljs-keyword, .infinpilot-function-window .hljs-meta .hljs-keyword, .infinpilot-function-window .hljs-template-tag, .infinpilot-function-window .hljs-template-variable, .infinpilot-function-window .hljs-type, .infinpilot-function-window .hljs-variable.language_ { color: #d73a49; }
+.infinpilot-function-window .hljs-title, .infinpilot-function-window .hljs-title.class_, .infinpilot-function-window .hljs-title.class_.inherited__, .infinpilot-function-window .hljs-title.function_ { color: #6f42c1; }
+.infinpilot-function-window .hljs-attr, .infinpilot-function-window .hljs-attribute, .infinpilot-function-window .hljs-literal, .infinpilot-function-window .hljs-meta, .infinpilot-function-window .hljs-number, .infinpilot-function-window .hljs-operator, .infinpilot-function-window .hljs-variable, .infinpilot-function-window .hljs-selector-attr, .infinpilot-function-window .hljs-selector-class, .infinpilot-function-window .hljs-selector-id { color: #005cc5; }
+.infinpilot-function-window .hljs-regexp, .infinpilot-function-window .hljs-string, .infinpilot-function-window .hljs-meta .hljs-string { color: #032f62; }
+.infinpilot-function-window .hljs-built_in, .infinpilot-function-window .hljs-symbol { color: #e36209; }
+.infinpilot-function-window .hljs-code, .infinpilot-function-window .hljs-comment, .infinpilot-function-window .hljs-formula { color: #6a737d; }
+.infinpilot-function-window .hljs-name, .infinpilot-function-window .hljs-quote, .infinpilot-function-window .hljs-selector-tag, .infinpilot-function-window .hljs-selector-pseudo { color: #22863a; }
+.infinpilot-function-window .hljs-subst { color: #24292e; }
+.infinpilot-function-window .hljs-section { color: #005cc5; font-weight: bold; }
+.infinpilot-function-window .hljs-bullet { color: #735c0f; }
+.infinpilot-function-window .hljs-emphasis { color: #24292e; font-style: italic; }
+.infinpilot-function-window .hljs-strong { color: #24292e; font-weight: bold; }
+.infinpilot-function-window .hljs-addition { color: #22863a; background-color: var(--success-bg, #f0fff4); }
+.infinpilot-function-window .hljs-deletion { color: #b31d28; background-color: var(--error-bg, #ffeef0); }
 
 
 
@@ -432,7 +432,7 @@
 /* --- End of Fix --- */
 
 /* 窗口头部 */
-.pagetalk-window-header {
+.infinpilot-window-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -442,19 +442,19 @@
     cursor: move;
 }
 
-.pagetalk-window-title {
+.infinpilot-window-title {
     font-size: 16px;
     font-weight: 600;
     color: #333;
 }
 
-.pagetalk-window-controls {
+.infinpilot-window-controls {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.pagetalk-window-controls select {
+.infinpilot-window-controls select {
     padding: 4px 8px;
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 6px;
@@ -468,7 +468,7 @@
 }
 
 /* 模型选择器分组样式 - 统一样式 */
-.pagetalk-window-controls select optgroup {
+.infinpilot-window-controls select optgroup {
     font-weight: bold;
     color: #333;
     background-color: transparent;
@@ -478,7 +478,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.pagetalk-window-controls select option {
+.infinpilot-window-controls select option {
     padding: 3px 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
@@ -486,11 +486,11 @@
     background-color: rgba(255, 255, 255, 0.9);
 }
 
-.pagetalk-window-controls select option:hover {
+.infinpilot-window-controls select option:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-.pagetalk-window-controls button {
+.infinpilot-window-controls button {
     display: flex;
     align-items: center;     /* 垂直居中 */
     justify-content: center; /* 水平居中 */
@@ -505,12 +505,12 @@
     padding: 0; /* 新增：移除可能导致偏移的内边距 */
 }
 
-.pagetalk-window-controls button:hover {
+.infinpilot-window-controls button:hover {
     background: rgba(0, 0, 0, 0.1);
     color: #333;
 }
 
-.pagetalk-window-close { /* 确保通用关闭按钮也居中 */
+.infinpilot-window-close { /* 确保通用关闭按钮也居中 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -518,21 +518,21 @@
     line-height: 1 !important; /* 确保行高不会影响垂直对齐 */
 }
 
-.pagetalk-window-drag-handle {
+.infinpilot-window-drag-handle {
     flex: 1;
     height: 20px;
     cursor: move;
 }
 
 /* 引用区域 */
-.pagetalk-quote-area {
+.infinpilot-quote-area {
     padding: 12px 16px;
     background: rgba(0, 0, 0, 0.02);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     position: relative;
 }
 
-.pagetalk-quote-text {
+.infinpilot-quote-text {
     font-style: italic;
     color: #666;
     font-size: 14px;
@@ -544,13 +544,13 @@
     transition: max-height 0.3s ease;
 }
 
-.pagetalk-quote-text.collapsed {
+.infinpilot-quote-text.collapsed {
     max-height: 2.8em; /* 约2行的高度 (1.4 * 2) */
     position: relative;
 }
 
 /* 为折叠状态添加渐变遮罩，避免文字与展开按钮重叠 */
-.pagetalk-quote-text.collapsed::after {
+.infinpilot-quote-text.collapsed::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -571,11 +571,11 @@
     z-index: 2; /* 提高层级，确保在文字上方 */
 }
 
-.pagetalk-quote-text.expanded {
+.infinpilot-quote-text.expanded {
     max-height: none;
 }
 
-.pagetalk-quote-text::before {
+.infinpilot-quote-text::before {
     content: '';
     position: absolute;
     left: 0;
@@ -586,7 +586,7 @@
     border-radius: 2px;
 }
 
-.pagetalk-quote-toggle {
+.infinpilot-quote-toggle {
     position: absolute;
     bottom: 6px;
     right: 10px;
@@ -605,7 +605,7 @@
     backdrop-filter: blur(4px); /* 添加毛玻璃效果 */
 }
 
-.pagetalk-quote-toggle:hover {
+.infinpilot-quote-toggle:hover {
     background: rgba(0, 122, 255, 0.18);
     border-color: rgba(0, 122, 255, 0.6);
     box-shadow: 0 2px 6px rgba(0, 122, 255, 0.15);
@@ -613,7 +613,7 @@
 }
 
 /* 响应区域 */
-.pagetalk-response-area {
+.infinpilot-response-area {
     flex: 1;
     padding: 16px;
     overflow-y: auto;
@@ -621,7 +621,7 @@
     flex-direction: column;
 }
 
-.pagetalk-loading {
+.infinpilot-loading {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -630,7 +630,7 @@
     font-size: 14px;
 }
 
-.pagetalk-response-content {
+.infinpilot-response-content {
     flex: 1;
     line-height: 1.5;
     color: #333;
@@ -639,7 +639,7 @@
     word-wrap: break-word;
 }
 
-.pagetalk-response-actions {
+.infinpilot-response-actions {
     display: flex;
     gap: 8px;
     margin-top: 12px;
@@ -647,7 +647,7 @@
     border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-response-actions button {
+.infinpilot-response-actions button {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -661,13 +661,13 @@
     color: #666;
 }
 
-.pagetalk-response-actions button:hover {
+.infinpilot-response-actions button:hover {
     background: rgba(0, 0, 0, 0.05);
     color: #333;
 }
 
 /* 错误样式 */
-.pagetalk-error {
+.infinpilot-error {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -676,13 +676,13 @@
     gap: 12px;
 }
 
-.pagetalk-error-message {
+.infinpilot-error-message {
     color: var(--error-color, #ff4444);
     font-size: 14px;
     text-align: center;
 }
 
-.pagetalk-retry-btn {
+.infinpilot-retry-btn {
     padding: 8px 16px;
     border: 1px solid var(--error-color, #ff4444);
     border-radius: 6px;
@@ -692,12 +692,12 @@
     transition: all 0.2s ease;
 }
 
-.pagetalk-retry-btn:hover {
+.infinpilot-retry-btn:hover {
     background: rgba(255, 68, 68, 0.2);
 }
 
 /* 聊天消息区域 */
-.pagetalk-chat-messages {
+.infinpilot-chat-messages {
     flex: 1;
     padding: 16px 16px 24px 16px; /* 增加底部padding从16px到24px，为助手消息按钮留出空间 */
     overflow-y: auto;
@@ -706,24 +706,24 @@
     gap: 16px; /* 增加消息间距，为用户消息下方的按钮留出更多空间 */
 }
 
-.pagetalk-chat-message {
+.infinpilot-chat-message {
     display: flex;
     flex-direction: column;
     gap: 4px;
     position: relative; /* 为按钮定位提供参考 */
 }
 
-.pagetalk-chat-message-user {
+.infinpilot-chat-message-user {
     align-items: flex-end;
     margin-bottom: 24px; /* 为用户消息下方的按钮留出空间 */
 }
 
-.pagetalk-chat-message-assistant {
+.infinpilot-chat-message-assistant {
     align-items: flex-start;
     width: 100%; /* 新增：确保助手消息的容器占满整行宽度 */
 }
 
-.pagetalk-message-content {
+.infinpilot-message-content {
     border-radius: 12px;
     font-size: 14px;
     line-height: 1.4;
@@ -732,14 +732,14 @@
     position: relative; /* 为按钮定位提供参考 */
 }
 
-.pagetalk-chat-message-user .pagetalk-message-content {
+.infinpilot-chat-message-user .infinpilot-message-content {
     background: #007AFF;
     color: white;
     border-bottom-right-radius: 4px;
     padding: 8px 12px; /* 用户消息保持原有padding */
 }
 
-.pagetalk-chat-message-assistant .pagetalk-message-content {
+.infinpilot-chat-message-assistant .infinpilot-message-content {
     background: var(--card-background);
     color: var(--text-color);
     border-bottom-left-radius: 4px;
@@ -752,7 +752,7 @@
 
 /* 旧的思考动画样式已移除，现在使用独立的思考动画 */
 
-.pagetalk-message-actions {
+.infinpilot-message-actions {
     position: absolute;
     display: flex;
     gap: 4px;
@@ -763,24 +763,24 @@
 }
 
 /* 用户消息按钮位置：气泡下方 */
-.pagetalk-chat-message-user .pagetalk-message-actions {
+.infinpilot-chat-message-user .infinpilot-message-actions {
     bottom: -24px;
     right: 0;
 }
 
 /* 助手消息按钮位置：在气泡内容内部的右下角 */
-.pagetalk-chat-message-assistant .pagetalk-message-content .pagetalk-message-actions {
+.infinpilot-chat-message-assistant .infinpilot-message-content .infinpilot-message-actions {
     bottom: 6px; /* 对应主面板的 var(--spacing-xs) */
     right: 6px; /* 对应主面板的 var(--spacing-xs) */
 }
 
-.pagetalk-chat-message:hover .pagetalk-message-actions,
-.pagetalk-message-content:hover .pagetalk-message-actions {
+.infinpilot-chat-message:hover .infinpilot-message-actions,
+.infinpilot-message-content:hover .infinpilot-message-actions {
     opacity: 1;
     transform: translateY(2px) scale(1);
 }
 
-.pagetalk-message-actions button {
+.infinpilot-message-actions button {
     width: 24px;
     height: 24px;
     border-radius: 50%; /* 完全圆形 */
@@ -797,41 +797,41 @@
     backdrop-filter: blur(8px);
 }
 
-.pagetalk-message-actions button:hover {
+.infinpilot-message-actions button:hover {
     transform: scale(1.1);
     color: var(--primary-color); /* Default hover to primary color */
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-message-actions button:active {
+.infinpilot-message-actions button:active {
     transform: scale(0.95);
 }
 
 /* 用户消息内的按钮特定背景颜色 */
-.pagetalk-user-message .pagetalk-message-actions button {
+.infinpilot-user-message .infinpilot-message-actions button {
     background-color: rgba(255, 255, 255, 0.3);
     color: rgba(104, 103, 103, 0.8);
 }
 
-.pagetalk-user-message .pagetalk-message-actions button:hover {
+.infinpilot-user-message .infinpilot-message-actions button:hover {
     background-color: rgba(255, 255, 255, 0.6);
     color: var(--primary-color); /* User message action buttons also hover to primary */
 }
 
 /* 删除按钮特殊样式 */
-.pagetalk-message-actions .pagetalk-delete-btn:hover {
+.infinpilot-message-actions .infinpilot-delete-btn:hover {
     color: #dc3545 !important; /* 删除按钮悬停时显示红色 */
     background-color: rgba(220, 53, 69, 0.1) !important;
 }
 
-.pagetalk-user-message .pagetalk-message-actions .pagetalk-delete-btn:hover {
+.infinpilot-user-message .infinpilot-message-actions .infinpilot-delete-btn:hover {
     color: #dc3545 !important; /* 用户消息中的删除按钮也显示红色 */
     background-color: rgba(220, 53, 69, 0.15) !important;
 }
 
 /* 聊天输入区域 */
-.pagetalk-chat-input {
+.infinpilot-chat-input {
     display: flex;
     align-items: flex-end;
     gap: 8px;
@@ -840,7 +840,7 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
-.pagetalk-chat-input textarea {
+.infinpilot-chat-input textarea {
     flex: 1;
     height: 36px; /* 固定高度，与发送按钮同高 */
     min-height: 36px;
@@ -856,12 +856,12 @@
     line-height: 1.2; /* 调整行高 */
 }
 
-.pagetalk-chat-input textarea:focus {
+.infinpilot-chat-input textarea:focus {
     border-color: #007AFF;
     box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
-.pagetalk-send-btn {
+.infinpilot-send-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -876,31 +876,31 @@
     flex-shrink: 0; /* 防止按钮被压缩 */
 }
 
-.pagetalk-send-btn:hover {
+.infinpilot-send-btn:hover {
     background: #0056CC;
     transform: translateY(-1px);
 }
 
-.pagetalk-send-btn:disabled {
+.infinpilot-send-btn:disabled {
     background: #ccc;
     cursor: not-allowed;
     transform: none;
 }
 
 /* 流式输出暂停按钮样式 */
-.pagetalk-send-btn.pagetalk-stop-streaming {
+.infinpilot-send-btn.infinpilot-stop-streaming {
     background: #007AFF; /* 保持蓝色背景 */
     transform: none; /* 重置悬停变换 */
 }
 
-.pagetalk-send-btn.pagetalk-stop-streaming:hover {
+.infinpilot-send-btn.infinpilot-stop-streaming:hover {
     background: #DC3545; /* 悬停时变成红色 */
     color: white;
     transform: scale(1.05);
 }
 
 /* 独立思考动画样式 - 完全复制主面板的样式 */
-.pagetalk-function-window .pagetalk-thinking-message {
+.infinpilot-function-window .infinpilot-thinking-message {
     display: flex;
     align-items: center;
     justify-content: flex-start; /* 左对齐，与助手消息一致 */
@@ -908,7 +908,7 @@
     padding: 0;
 }
 
-.pagetalk-function-window .pagetalk-thinking-bubble {
+.infinpilot-function-window .infinpilot-thinking-bubble {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -938,7 +938,7 @@
     }
 }
 
-.pagetalk-function-window .thinking-dots {
+.infinpilot-function-window .thinking-dots {
     display: flex;
     align-items: center;
     gap: 8px; /* 使用主面板相同的间距 */
@@ -946,7 +946,7 @@
 }
 
 /* 添加背景光晕效果 */
-.pagetalk-function-window .thinking-dots::before {
+.infinpilot-function-window .thinking-dots::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -970,7 +970,7 @@
     }
 }
 
-.pagetalk-function-window .thinking-dots span {
+.infinpilot-function-window .thinking-dots span {
     display: inline-block;
     width: 7px; /* 使用主面板相同的尺寸 */
     height: 7px; /* 使用主面板相同的尺寸 */
@@ -982,17 +982,17 @@
     box-shadow: 0 1px 3px rgba(49, 123, 245, 0.2); /* 使用主面板相同的阴影 */
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(1) {
+.infinpilot-function-window .thinking-dots span:nth-child(1) {
     animation: thinkingPulseAdvanced 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
     animation-delay: 0s;
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(2) {
+.infinpilot-function-window .thinking-dots span:nth-child(2) {
     animation: thinkingPulseAdvanced 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
     animation-delay: 0.2s;
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(3) {
+.infinpilot-function-window .thinking-dots span:nth-child(3) {
     animation: thinkingPulseAdvanced 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
     animation-delay: 0.4s;
 }
@@ -1011,7 +1011,7 @@
 }
 
 /* 添加额外的微粒效果 */
-.pagetalk-function-window .thinking-dots span::after {
+.infinpilot-function-window .thinking-dots span::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -1025,15 +1025,15 @@
     animation: thinkingRipple 1.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(1)::after {
+.infinpilot-function-window .thinking-dots span:nth-child(1)::after {
     animation-delay: 0s;
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(2)::after {
+.infinpilot-function-window .thinking-dots span:nth-child(2)::after {
     animation-delay: 0.2s;
 }
 
-.pagetalk-function-window .thinking-dots span:nth-child(3)::after {
+.infinpilot-function-window .thinking-dots span:nth-child(3)::after {
     animation-delay: 0.4s;
 }
 
@@ -1049,18 +1049,18 @@
 }
 
 /* 流式输出光标样式 */
-.pagetalk-streaming-cursor {
+.infinpilot-streaming-cursor {
     display: inline-block;
     width: 2px;
     height: 1em;
     background-color: #007AFF;
     margin-left: 2px;
-    animation: pagetalkStreamingPulse 1.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    animation: infinpilotStreamingPulse 1.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
     vertical-align: text-bottom;
     border-radius: 1px;
 }
 
-@keyframes pagetalkStreamingPulse {
+@keyframes infinpilotStreamingPulse {
     0%, 100% {
         opacity: 1;
         transform: scaleY(1);
@@ -1072,7 +1072,7 @@
 }
 
 /* 工具提示 */
-.pagetalk-tooltip {
+.infinpilot-tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.8);
     color: white;
@@ -1187,14 +1187,14 @@
 /* 注意：header 不设置悬浮背景色变化，因为整个卡片已经有悬浮效果了 */
 
 /* 设置面板样式 - 划词助手功能窗口内的设置界面 */
-.pagetalk-function-window .setting-card {
+.infinpilot-function-window .setting-card {
     margin-bottom: 16px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     overflow: hidden;
 }
 
-.pagetalk-function-window .setting-card-header {
+.infinpilot-function-window .setting-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1205,7 +1205,7 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-function-window .setting-card-header:hover {
+.infinpilot-function-window .setting-card-header:hover {
     background-color: var(--button-hover-bg); /* Primary color transparent hover，与 .agent-item-header:hover 保持一致 */
 }
 
@@ -1297,14 +1297,14 @@
     display: block !important; /* 确保始终显示 */
 }
 
-.pagetalk-function-window .setting-card-header h3 {
+.infinpilot-function-window .setting-card-header h3 {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
     color: #333;
 }
 
-.pagetalk-function-window .setting-card-toggle {
+.infinpilot-function-window .setting-card-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1317,20 +1317,20 @@
     color: #666;
 }
 
-.pagetalk-function-window .setting-card-toggle:hover {
+.infinpilot-function-window .setting-card-toggle:hover {
     color: #333;
 }
 
-.pagetalk-function-window .setting-card.collapsed .setting-card-toggle {
+.infinpilot-function-window .setting-card.collapsed .setting-card-toggle {
     transform: rotate(-90deg);
 }
 
-.pagetalk-function-window .setting-card-content {
+.infinpilot-function-window .setting-card-content {
     padding: 16px;
     display: block;
 }
 
-.pagetalk-function-window .setting-card.collapsed .setting-card-content {
+.infinpilot-function-window .setting-card.collapsed .setting-card-content {
     display: none;
 }
 
@@ -1404,15 +1404,15 @@
     background-color: var(--background-color);
 }
 
-.pagetalk-function-window .setting-group {
+.infinpilot-function-window .setting-group {
     margin-bottom: 16px;
 }
 
-.pagetalk-function-window .setting-group:last-child {
+.infinpilot-function-window .setting-group:last-child {
     margin-bottom: 0;
 }
 
-.pagetalk-function-window .setting-group label {
+.infinpilot-function-window .setting-group label {
     display: block;
     margin-bottom: 6px;
     font-size: 13px;
@@ -1420,8 +1420,8 @@
     color: #333;
 }
 
-.pagetalk-function-window .setting-group select,
-.pagetalk-function-window .setting-group textarea {
+.infinpilot-function-window .setting-group select,
+.infinpilot-function-window .setting-group textarea {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid rgba(0, 0, 0, 0.2);
@@ -1434,14 +1434,14 @@
     transition: border-color 0.2s ease;
 }
 
-.pagetalk-function-window .setting-group select:focus,
-.pagetalk-function-window .setting-group textarea:focus {
+.infinpilot-function-window .setting-group select:focus,
+.infinpilot-function-window .setting-group textarea:focus {
     border-color: #007AFF;
     box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
 /* 划词助手弹窗中的模型选择器样式 - 统一样式 */
-.pagetalk-function-window .setting-group select optgroup {
+.infinpilot-function-window .setting-group select optgroup {
     font-weight: bold;
     color: #333;
     background-color: transparent;
@@ -1451,7 +1451,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.pagetalk-function-window .setting-group select option {
+.infinpilot-function-window .setting-group select option {
     padding: 3px 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
@@ -1512,18 +1512,18 @@
     font-size: clamp(12px, 3.5vw, 14px);
 }
 
-.pagetalk-function-window .setting-group textarea {
+.infinpilot-function-window .setting-group textarea {
     resize: vertical;
     min-height: 60px;
 }
 
-.pagetalk-function-window .temperature-control {
+.infinpilot-function-window .temperature-control {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.pagetalk-function-window .temperature-control input[type="range"] {
+.infinpilot-function-window .temperature-control input[type="range"] {
     flex: 1;
     height: 4px;
     background: rgba(0, 0, 0, 0.1);
@@ -1533,7 +1533,7 @@
     appearance: none;
 }
 
-.pagetalk-function-window .temperature-control input[type="range"]::-webkit-slider-thumb {
+.infinpilot-function-window .temperature-control input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 16px;
     height: 16px;
@@ -1542,7 +1542,7 @@
     cursor: pointer;
 }
 
-.pagetalk-function-window .temperature-control input[type="range"]::-moz-range-thumb {
+.infinpilot-function-window .temperature-control input[type="range"]::-moz-range-thumb {
     width: 16px;
     height: 16px;
     background: #007AFF;
@@ -1551,7 +1551,7 @@
     border: none;
 }
 
-.pagetalk-function-window .temperature-value {
+.infinpilot-function-window .temperature-value {
     font-size: 13px;
     font-weight: 500;
     color: #666;
@@ -1559,11 +1559,11 @@
     text-align: center;
 }
 
-.pagetalk-function-window .custom-options-list {
+.infinpilot-function-window .custom-options-list {
     margin-bottom: 16px;
 }
 
-.pagetalk-function-window .custom-option-item {
+.infinpilot-function-window .custom-option-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1574,23 +1574,23 @@
     background: rgba(255, 255, 255, 0.5);
 }
 
-.pagetalk-function-window .custom-option-item:last-child {
+.infinpilot-function-window .custom-option-item:last-child {
     margin-bottom: 0;
 }
 
-.pagetalk-function-window .custom-option-name {
+.infinpilot-function-window .custom-option-name {
     flex: 1;
     font-size: 13px;
     font-weight: 500;
     color: #333;
 }
 
-.pagetalk-function-window .custom-option-actions {
+.infinpilot-function-window .custom-option-actions {
     display: flex;
     gap: 4px;
 }
 
-.pagetalk-function-window .custom-option-actions button {
+.infinpilot-function-window .custom-option-actions button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1604,7 +1604,7 @@
     color: #666;
 }
 
-.pagetalk-function-window .custom-option-actions button:hover {
+.infinpilot-function-window .custom-option-actions button:hover {
     background: rgba(0, 0, 0, 0.2);
     color: #333;
 }
@@ -2419,11 +2419,11 @@ input[name="translate-context-mode"][value="full"]:checked + label + .context-in
     font-style: italic;
 }
 
-.pagetalk-function-window .options-order-list {
+.infinpilot-function-window .options-order-list {
     margin-bottom: 16px;
 }
 
-.pagetalk-function-window .order-option-item {
+.infinpilot-function-window .order-option-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2437,38 +2437,38 @@ input[name="translate-context-mode"][value="full"]:checked + label + .context-in
     user-select: none;
 }
 
-.pagetalk-function-window .order-option-item:hover {
+.infinpilot-function-window .order-option-item:hover {
     background: rgba(0, 0, 0, 0.02);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-function-window .order-option-item:last-child {
+.infinpilot-function-window .order-option-item:last-child {
     margin-bottom: 0;
 }
 
-.pagetalk-function-window .order-option-item.drag-over {
+.infinpilot-function-window .order-option-item.drag-over {
     background: rgba(0, 122, 255, 0.1);
     border-color: #007AFF;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 122, 255, 0.2);
 }
 
-.pagetalk-function-window .order-option-item[draggable="true"] {
+.infinpilot-function-window .order-option-item[draggable="true"] {
     cursor: grab;
 }
 
-.pagetalk-function-window .order-option-item[draggable="true"]:active {
+.infinpilot-function-window .order-option-item[draggable="true"]:active {
     cursor: grabbing;
 }
 
-.pagetalk-function-window .order-option-name {
+.infinpilot-function-window .order-option-name {
     flex: 1;
     font-size: 13px;
     color: #333;
 }
 
-.pagetalk-function-window .order-option-type {
+.infinpilot-function-window .order-option-type {
     font-size: 11px;
     color: #666;
     background: rgba(0, 0, 0, 0.05);
@@ -2476,7 +2476,7 @@ input[name="translate-context-mode"][value="full"]:checked + label + .context-in
     border-radius: 3px;
 }
 
-.pagetalk-function-window .hint {
+.infinpilot-function-window .hint {
     font-size: 12px;
     color: #666;
     margin: 0;
@@ -2963,7 +2963,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
 /* ===== Mermaid 图表样式 ===== */
 
 /* Mermaid 容器样式 */
-.pagetalk-function-window .mermaid {
+.infinpilot-function-window .mermaid {
     margin: 1em 0;
     text-align: center;
     cursor: pointer;
@@ -2972,12 +2972,12 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
     overflow: hidden;
 }
 
-.pagetalk-function-window .mermaid:hover {
+.infinpilot-function-window .mermaid:hover {
     transform: scale(1.02);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.pagetalk-function-window .mermaid svg {
+.infinpilot-function-window .mermaid svg {
     max-width: 100%;
     height: auto;
     background-color: var(--card-background);
@@ -2987,7 +2987,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
 }
 
 /* Mermaid 错误样式 */
-.pagetalk-function-window .mermaid-error {
+.infinpilot-function-window .mermaid-error {
     background-color: rgba(220, 53, 69, 0.1);
     border: 1px solid rgba(220, 53, 69, 0.3);
     border-radius: 8px;
@@ -3000,7 +3000,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
 }
 
 /* Mermaid 模态框样式 */
-.pagetalk-mermaid-modal {
+.infinpilot-mermaid-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -3016,7 +3016,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
     overflow: auto;
 }
 
-.pagetalk-mermaid-modal-content {
+.infinpilot-mermaid-modal-content {
     margin: auto;
     display: flex;
     justify-content: center;
@@ -3027,7 +3027,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
     max-height: 90vh;
 }
 
-.pagetalk-mermaid-modal-content svg {
+.infinpilot-mermaid-modal-content svg {
     max-width: 100%;
     max-height: 100%;
     height: auto;
@@ -3039,12 +3039,12 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
     cursor: grab;
 }
 
-.pagetalk-mermaid-modal-content svg:active {
+.infinpilot-mermaid-modal-content svg:active {
     cursor: grabbing;
 }
 
 /* Mermaid 模态框关闭按钮样式 */
-.pagetalk-mermaid-close-modal {
+.infinpilot-mermaid-close-modal {
     position: absolute;
     top: 15px;
     right: 35px;
@@ -3058,7 +3058,7 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
     user-select: none;
 }
 
-.pagetalk-mermaid-close-modal:hover {
+.infinpilot-mermaid-close-modal:hover {
     color: #4674ff;
     text-decoration: none;
 }
@@ -3066,23 +3066,23 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
 /* ===== KaTeX 数学公式样式 ===== */
 
 /* KaTeX 基础样式 */
-.pagetalk-function-window .katex {
+.infinpilot-function-window .katex {
     font-size: 1.1em;
     line-height: 1.2;
 }
 
-.pagetalk-function-window .katex-display {
+.infinpilot-function-window .katex-display {
     margin: 1em 0;
     text-align: center;
 }
 
-.pagetalk-function-window .katex-display > .katex {
+.infinpilot-function-window .katex-display > .katex {
     display: inline-block;
     white-space: nowrap;
 }
 
 /* KaTeX 错误样式 */
-.pagetalk-function-window .katex-error {
+.infinpilot-function-window .katex-error {
     color: #cc0000;
     background-color: rgba(204, 0, 0, 0.1);
     border: 1px solid rgba(204, 0, 0, 0.3);
@@ -3093,22 +3093,22 @@ body.dark-mode #settings-text-selection-helper .add-custom-option-btn:hover {
 }
 
 /* 深色模式下的 Mermaid 和 KaTeX 样式 */
-body.dark-mode .pagetalk-function-window .mermaid svg {
+body.dark-mode .infinpilot-function-window .mermaid svg {
     background-color: var(--card-background);
 }
 
-body.dark-mode .pagetalk-mermaid-modal-content svg {
+body.dark-mode .infinpilot-mermaid-modal-content svg {
     background-color: var(--card-background, #2d3748);
     color: var(--text-color, #e2e8f0);
 }
 
-body.dark-mode .pagetalk-function-window .mermaid-error {
+body.dark-mode .infinpilot-function-window .mermaid-error {
     background-color: rgba(255, 135, 135, 0.15);
     border-color: rgba(255, 135, 135, 0.3);
     color: var(--error-color);
 }
 
-body.dark-mode .pagetalk-function-window .katex-error {
+body.dark-mode .infinpilot-function-window .katex-error {
     background-color: rgba(255, 135, 135, 0.15);
     border-color: rgba(255, 135, 135, 0.3);
     color: var(--error-color);

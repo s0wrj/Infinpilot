@@ -1,5 +1,5 @@
 /**
- * PageTalk - OpenAI 兼容 API 适配器
+ * InfinPilot - OpenAI 兼容 API 适配器
  *
  * 处理 OpenAI 兼容 API 的请求格式转换和响应解析
  * 支持：OpenAI、SiliconFlow、OpenRouter、DeepSeek 等
@@ -36,8 +36,8 @@ export async function openaiAdapter(modelConfig, provider, providerSettings, mes
     const apiHost = providerSettings.apiHost || provider.apiHost;
     const { apiModelName } = modelConfig;
     
-    // 转换消息格式为 OpenAI 格式（已经是标准格式，无需转换）
-    const openaiMessages = convertMessagesToOpenAIFormat(messages);
+    // Pass options (including systemPrompt) to the conversion function
+    const openaiMessages = convertMessagesToOpenAIFormat(messages, options);
     
     // 根据供应商与模型确定是否应省略 temperature（某些推理模型不支持）
     const omitTemperature = isTemperatureUnsupported(provider.id, apiModelName);
@@ -56,13 +56,18 @@ export async function openaiAdapter(modelConfig, provider, providerSettings, mes
     if (options.maxTokens && parseInt(options.maxTokens) > 0) {
         requestBody.max_tokens = parseInt(options.maxTokens);
     }
-    
-    // 添加系统消息（如果有）
-    if (options.systemPrompt) {
-        requestBody.messages.unshift({
-            role: 'system',
-            content: options.systemPrompt
-        });
+
+    // Add tools if they exist in options
+    if (options.tools) {
+        const dict = (typeof getCurrentTranslations === 'function') ? getCurrentTranslations() : null;
+        requestBody.tools = options.tools.map(tool => ({
+            type: 'function',
+            function: {
+                name: tool.name,
+                description: (dict && dict[tool.description]) || tool.description,
+                parameters: tool.inputSchema
+            }
+        }));
     }
     
     // 构建请求头
@@ -72,28 +77,28 @@ export async function openaiAdapter(modelConfig, provider, providerSettings, mes
 
     // 根据供应商设置认证方式
     if (provider.id === 'chatglm') {
-        // ChatGLM 使用直接的 API key 认证，不需要 Bearer 前缀
         headers['Authorization'] = apiKey;
     } else {
-        // 其他供应商使用标准的 Bearer 认证
         headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
     // 特殊处理某些供应商的请求头
     if (provider.id === 'openrouter') {
-        headers['HTTP-Referer'] = 'https://pagetalk.extension';
-        headers['X-Title'] = 'PageTalk Browser Extension';
+        headers['HTTP-Referer'] = 'https://infinpilot.extension';
+        headers['X-Title'] = 'InfinPilot Browser Extension';
     }
     
-    // 构建 API URL - 智能处理不同供应商的 URL 格式
     const endpoint = formatApiUrl(apiHost, provider.id, '/chat/completions');
     
     try {
-        const response = await makeProxyRequest(endpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
-            signal: options.signal
+        // WRAP aPI call with retry logic
+        const response = await window.retryHandler.withRetry(async () => {
+            return await makeProxyRequest(endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(requestBody),
+                signal: options.signal
+            });
         });
         
         if (!response.ok) {
@@ -101,14 +106,11 @@ export async function openaiAdapter(modelConfig, provider, providerSettings, mes
             throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
         }
         
-        // 处理流式响应
-        await processOpenAIStreamResponse(response, streamCallback);
+        return await processOpenAIStreamResponse(response, streamCallback);
         
     } catch (error) {
-        // 检查是否是用户主动中断的请求
         if (error.name === 'AbortError' || error instanceof DOMException) {
             console.log('[OpenAIAdapter] Request aborted by user');
-            // 重新抛出 AbortError，让上层处理
             const abortError = new Error('Request aborted');
             abortError.name = 'AbortError';
             throw abortError;
@@ -145,32 +147,52 @@ function isTemperatureUnsupported(providerId, modelName) {
  * @param {Array} messages - 标准消息数组
  * @returns {Array} OpenAI 格式的消息数组
  */
-function convertMessagesToOpenAIFormat(messages) {
-    return messages.map(message => {
-        const openaiMessage = {
-            role: message.role,
-            content: message.content
-        };
-        
-        // 处理图片（如果有）
-        if (message.images && message.images.length > 0) {
-            // 对于支持视觉的模型，转换为 content 数组格式
-            openaiMessage.content = [
-                { type: 'text', text: message.content }
-            ];
+function convertMessagesToOpenAIFormat(messages, options = {}) {
+    const formattedMessages = messages
+        .filter(msg => msg.role !== 'system') // Filter out any system messages from the main array
+        .map(message => {
+            // Handle standard user/assistant messages with potential images
+            if (message.role === 'user' || message.role === 'assistant') {
+                const openaiMessage = {
+                    role: message.role,
+                    content: message.content || ''
+                };
+
+                if (message.images && message.images.length > 0) {
+                    const contentParts = [{ type: 'text', text: message.content || '' }];
+                    message.images.forEach(image => {
+                        contentParts.push({
+                            type: 'image_url',
+                            image_url: { url: image.dataUrl }
+                        });
+                    });
+                    openaiMessage.content = contentParts;
+                }
+                return openaiMessage;
+            }
+
+            // Handle tool result messages
+            if (message.role === 'tool') {
+                return {
+                    role: 'tool',
+                    tool_call_id: message.tool_call_id,
+                    name: message.name,
+                    content: message.content
+                };
+            }
             
-            message.images.forEach(image => {
-                openaiMessage.content.push({
-                    type: 'image_url',
-                    image_url: {
-                        url: image.dataUrl
-                    }
-                });
-            });
-        }
-        
-        return openaiMessage;
-    });
+            return null;
+        }).filter(Boolean);
+
+    // Prepend the system message from options if it exists
+    if (options.systemPrompt) {
+        formattedMessages.unshift({
+            role: 'system',
+            content: options.systemPrompt
+        });
+    }
+
+    return formattedMessages;
 }
 
 /**
@@ -181,102 +203,131 @@ function convertMessagesToOpenAIFormat(messages) {
 async function processOpenAIStreamResponse(response, streamCallback) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = ''; // 用于缓存不完整的数据
+    let buffer = '';
+    let accumulatedText = '';
+    let toolCalls = [];
+    let toolCallChunks = {}; // Store partial tool call chunks by index
 
     try {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            // 将新数据添加到缓冲区
             buffer += decoder.decode(value, { stream: true });
-
-            // 按行分割，保留最后一个可能不完整的行
             const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const jsonStr = line.slice(6).trim();
                     if (jsonStr === '[DONE]') {
-                        // 流式输出结束
-                        if (streamCallback) {
-                            streamCallback('', true);
-                        }
-                        return;
+                        if (streamCallback) streamCallback('', true);
+                        // Final assembly of tool calls from chunks
+                        toolCalls = Object.values(toolCallChunks).map(chunk => ({
+                            id: chunk.id,
+                            type: 'function',
+                            function: {
+                                name: chunk.function.name,
+                                arguments: chunk.function.arguments
+                            }
+                        }));
+                        return { text: accumulatedText, toolCalls };
                     }
-
-                    // 跳过空的数据行
-                    if (!jsonStr) {
-                        continue;
-                    }
+                    if (!jsonStr) continue;
 
                     try {
                         const data = JSON.parse(jsonStr);
-                        const choices = data.choices;
+                        const choice = data.choices?.[0];
+                        if (!choice) continue;
 
-                        if (choices && choices.length > 0) {
-                            const choice = choices[0];
-                            const delta = choice.delta;
+                        const delta = choice.delta;
 
-                            if (delta && delta.content) {
-                                const text = delta.content;
+                        if (delta?.content) {
+                            let textToStream = delta.content;
+                            const toolCodeRegex = /<tool_code>([\s\S]*?)<\/tool_code>/g;
+                            let match;
 
-                                // 调用流式回调 - 修复：使用正确的参数格式 (chunk, isComplete)
-                                if (streamCallback) {
-                                    streamCallback(text, false);
+                            while ((match = toolCodeRegex.exec(delta.content)) !== null) {
+                                const toolCodeContent = match[1].trim();
+                                textToStream = textToStream.replace(match[0], ''); // Remove the tool_code block
+
+                                try {
+                                    const functionCallMatch = toolCodeContent.match(/^([a-zA-Z0-9_]+)\s*\(([\s\S]*)\)\s*$/);
+                                    if (functionCallMatch) {
+                                        const functionName = functionCallMatch[1];
+                                        const argsString = functionCallMatch[2].trim();
+                                        const args = argsString ? JSON.parse(argsString) : {};
+                                        
+                                        // Reconstruct into OpenAI tool call format and add to chunks
+                                        const toolCallId = `call_${Math.random().toString(36).substr(2, 9)}`;
+                                        toolCallChunks[Object.keys(toolCallChunks).length] = {
+                                            id: toolCallId,
+                                            type: 'function',
+                                            function: {
+                                                name: functionName,
+                                                arguments: JSON.stringify(args)
+                                            }
+                                        };
+                                    } else {
+                                        console.warn('[OpenAIAdapter] Could not parse tool code format:', toolCodeContent);
+                                    }
+                                } catch (e) {
+                                    console.error('[OpenAIAdapter] Error parsing tool code arguments JSON:', e);
                                 }
                             }
+
+                            if (textToStream) {
+                                accumulatedText += textToStream;
+                                if (streamCallback) streamCallback(textToStream, false);
+                            }
                         }
+
+                        if (delta?.tool_calls) {
+                            delta.tool_calls.forEach(toolCallDelta => {
+                                const index = toolCallDelta.index;
+                                if (toolCallChunks[index] === undefined) {
+                                    toolCallChunks[index] = {};
+                                }
+                                const chunk = toolCallChunks[index];
+
+                                if (toolCallDelta.id) {
+                                    chunk.id = toolCallDelta.id;
+                                }
+                                if (toolCallDelta.type) {
+                                    chunk.type = toolCallDelta.type;
+                                }
+                                if (toolCallDelta.function) {
+                                    if (chunk.function === undefined) {
+                                        chunk.function = { name: '', arguments: '' };
+                                    }
+                                    if (toolCallDelta.function.name) {
+                                        chunk.function.name += toolCallDelta.function.name;
+                                    }
+                                    if (toolCallDelta.function.arguments) {
+                                        chunk.function.arguments += toolCallDelta.function.arguments;
+                                    }
+                                }
+                            });
+                        }
+
                     } catch (parseError) {
-                        // 只在调试模式下显示详细错误，避免控制台噪音
-                        if (jsonStr.length > 10) { // 只记录看起来像有效JSON但解析失败的情况
-                            console.debug('[OpenAIAdapter] Failed to parse SSE data:', parseError.message, 'Data:', jsonStr.substring(0, 100));
-                        }
+                        console.debug('[OpenAIAdapter] Failed to parse SSE data:', parseError.message, 'Data:', jsonStr.substring(0, 100));
                     }
                 }
             }
         }
 
-        // 处理缓冲区中剩余的数据
-        if (buffer.trim()) {
-            const line = buffer.trim();
-            if (line.startsWith('data: ')) {
-                const jsonStr = line.slice(6).trim();
-                if (jsonStr === '[DONE]') {
-                    if (streamCallback) {
-                        streamCallback('', true);
-                    }
-                    return;
-                }
-
-                if (jsonStr) {
-                    try {
-                        const data = JSON.parse(jsonStr);
-                        const choices = data.choices;
-
-                        if (choices && choices.length > 0) {
-                            const choice = choices[0];
-                            const delta = choice.delta;
-
-                            if (delta && delta.content) {
-                                const text = delta.content;
-                                if (streamCallback) {
-                                    streamCallback(text, false);
-                                }
-                            }
-                        }
-                    } catch (parseError) {
-                        console.debug('[OpenAIAdapter] Failed to parse final SSE data:', parseError.message);
-                    }
-                }
+        if (streamCallback) streamCallback('', true);
+        toolCalls = Object.values(toolCallChunks).map(chunk => ({
+            id: chunk.id,
+            type: 'function',
+            function: {
+                name: chunk.function.name,
+                arguments: chunk.function.arguments
             }
-        }
+        }));
+        return { text: accumulatedText, toolCalls };
 
-        // 如果循环正常结束（没有遇到 [DONE]），也要调用完成回调
-        if (streamCallback) {
-            streamCallback('', true);
-        }
     } finally {
         reader.releaseLock();
     }
@@ -370,8 +421,8 @@ export async function fetchOpenAIModels(provider, providerSettings) {
 
         // 特殊处理某些供应商的请求头
         if (provider.id === 'openrouter') {
-            headers['HTTP-Referer'] = 'https://pagetalk.extension';
-            headers['X-Title'] = 'PageTalk Browser Extension';
+            headers['HTTP-Referer'] = 'https://infinpilot.extension';
+            headers['X-Title'] = 'InfinPilot Browser Extension';
         }
 
         // 构建模型列表端点 - 智能处理不同供应商的 URL 格式
@@ -491,8 +542,8 @@ export async function testOpenAIApiKey(provider, providerSettings, testModel = n
         }
 
         if (provider.id === 'openrouter') {
-            headers['HTTP-Referer'] = 'https://pagetalk.extension';
-            headers['X-Title'] = 'PageTalk Browser Extension';
+            headers['HTTP-Referer'] = 'https://infinpilot.extension';
+            headers['X-Title'] = 'InfinPilot Browser Extension';
         }
 
         // 构建模型列表端点 - 智能处理不同供应商的 URL 格式

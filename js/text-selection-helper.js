@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Text Selection Helper Module
+ * Infinpilot - Text Selection Helper Module
  * 划词助手功能模块
  */
 
@@ -263,7 +263,7 @@ function getTranslationFunction() {
  */
 function getCurrentLanguage() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['language'], (result) => {
+        browser.storage.sync.get(['language'], (result) => {
             resolve(result.language || 'zh-CN');
         });
     });
@@ -369,8 +369,8 @@ let cachedEnabledState = true; // 默认启用
  * 初始化启用状态缓存
  */
 function initEnabledStateCache() {
-    if (chrome && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get(['textSelectionHelperSettings'], (result) => {
+    if (chrome && browser.storage && browser.storage.local) {
+        browser.storage.local.get(['textSelectionHelperSettings'], (result) => {
             if (result.textSelectionHelperSettings && typeof result.textSelectionHelperSettings.enabled !== 'undefined') {
                 cachedEnabledState = result.textSelectionHelperSettings.enabled;
                 console.log('[TextSelectionHelper] Enabled state cache initialized:', cachedEnabledState);
@@ -401,8 +401,8 @@ function isHelperEnabled() {
  * 监听设置变化，更新缓存状态
  */
 function setupSettingsChangeListener() {
-    if (chrome && chrome.storage && chrome.storage.onChanged) {
-        chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (chrome && browser.storage && browser.storage.onChanged) {
+        browser.storage.onChanged.addListener((changes, namespace) => {
             // 监听本地存储中的划词助手设置变化
             if (namespace === 'local' && changes.textSelectionHelperSettings) {
                 const newSettings = changes.textSelectionHelperSettings.newValue;
@@ -429,7 +429,7 @@ function setupSettingsChangeListener() {
  */
 function setupLanguageChangeListener() {
     // 监听来自主面板的语言变化事件
-    document.addEventListener('pagetalk:languageChanged', (event) => {
+    document.addEventListener('infinpilot:languageChanged', (event) => {
         const newLanguage = event.detail?.newLanguage;
         if (newLanguage) {
             console.log('[TextSelectionHelper] Received language change event:', newLanguage);
@@ -473,7 +473,7 @@ window.handleTextSelectionHelperLanguageChange = handleTextSelectionHelperLangua
  */
 function handleTextSelection(event) {
     // 如果是点击了我们自己的 UI（mini icon/选项栏/功能窗口），忽略本次选择检查，避免瞬间消失
-    if (event && event.target && event.target.closest && event.target.closest('.pagetalk-selection-helper')) {
+    if (event && event.target && event.target.closest && event.target.closest('.infinpilot-selection-helper')) {
         return;
     }
     // 检查划词助手是否启用
@@ -533,7 +533,7 @@ function shouldExcludeSelection(selection) {
     const element = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
 
     // 只排除密码输入框和插件自身的UI
-    if (element.closest('input[type="password"], .pagetalk-selection-helper, .pagetalk-function-window')) {
+    if (element.closest('input[type="password"], .infinpilot-selection-helper, .infinpilot-function-window')) {
         return true;
     }
 
@@ -965,15 +965,15 @@ function showMiniIcon() {
     console.log('[TextSelectionHelper] Selection rect:', rect);
 
     // 诊断页面环境（仅在第一次显示时）
-    if (!window.pagetalkDiagnosed) {
+    if (!window.infinpilotDiagnosed) {
         diagnosePage();
-        window.pagetalkDiagnosed = true;
+        window.infinpilotDiagnosed = true;
     }
 
     // 创建 mini icon 元素
     const miniIcon = document.createElement('div');
-    miniIcon.className = 'pagetalk-selection-helper pagetalk-mini-icon';
-    miniIcon.innerHTML = `<img src="${chrome.runtime.getURL('magic.png')}" alt="PageTalk" width="20" height="20">`;
+    miniIcon.className = 'infinpilot-selection-helper infinpilot-mini-icon';
+    miniIcon.innerHTML = `<img src="${browser.runtime.getURL('magic.png')}" alt="InfinPilot" width="20" height="20">`;
 
     // 使用改进的定位算法
     const position = getAbsolutePosition(rect);
@@ -1091,26 +1091,26 @@ async function showOptionsBar(triggerElement) {
 
         // 创建选项栏
         const optionsBar = document.createElement('div');
-        optionsBar.className = 'pagetalk-selection-helper pagetalk-options-bar';
+        optionsBar.className = 'infinpilot-selection-helper infinpilot-options-bar';
     
         // 构建选项栏内容 - icon在左侧，选项在右侧
         let optionsHTML = `
-            <div class="pagetalk-options-bar-icon">
-                <img src="${chrome.runtime.getURL('magic.png')}" alt="PageTalk" width="16" height="16">
+            <div class="infinpilot-options-bar-icon">
+                <img src="${browser.runtime.getURL('magic.png')}" alt="InfinPilot" width="16" height="16">
             </div>
-            <div class="pagetalk-options-grid">
+            <div class="infinpilot-options-grid">
         `;
 
         // 将选项按每行6个进行分组
         const optionsPerRow = 6;
         for (let i = 0; i < options.length; i += optionsPerRow) {
-            optionsHTML += '<div class="pagetalk-options-row">';
+            optionsHTML += '<div class="infinpilot-options-row">';
             const rowOptions = options.slice(i, i + optionsPerRow);
             rowOptions.forEach(option => {
                 optionsHTML += `
-                    <div class="pagetalk-option" data-option="${option.id}">
-                        <span class="pagetalk-option-icon">${option.icon}</span>
-                        <span class="pagetalk-option-text">${option.name}</span>
+                    <div class="infinpilot-option" data-option="${option.id}">
+                        <span class="infinpilot-option-icon">${option.icon}</span>
+                        <span class="infinpilot-option-text">${option.name}</span>
                     </div>
                 `;
             });
@@ -1194,25 +1194,25 @@ function showDefaultOptionsBar(triggerElement) {
     ];
 
     const optionsBar = document.createElement('div');
-    optionsBar.className = 'pagetalk-selection-helper pagetalk-options-bar';
+    optionsBar.className = 'infinpilot-selection-helper infinpilot-options-bar';
 
     let optionsHTML = `
-        <div class="pagetalk-options-bar-icon">
-            <img src="${chrome.runtime.getURL('magic.png')}" alt="PageTalk" width="16" height="16">
+        <div class="infinpilot-options-bar-icon">
+            <img src="${browser.runtime.getURL('magic.png')}" alt="InfinPilot" width="16" height="16">
         </div>
-        <div class="pagetalk-options-grid">
+        <div class="infinpilot-options-grid">
     `;
 
     // 将选项按每行6个进行分组
     const optionsPerRow = 6;
     for (let i = 0; i < defaultOptions.length; i += optionsPerRow) {
-        optionsHTML += '<div class="pagetalk-options-row">';
+        optionsHTML += '<div class="infinpilot-options-row">';
         const rowOptions = defaultOptions.slice(i, i + optionsPerRow);
         rowOptions.forEach(option => {
             optionsHTML += `
-                <div class="pagetalk-option" data-option="${option.id}">
-                    <span class="pagetalk-option-icon">${option.icon}</span>
-                    <span class="pagetalk-option-text" data-i18n="${option.name}">${option.name}</span>
+                <div class="infinpilot-option" data-option="${option.id}">
+                    <span class="infinpilot-option-icon">${option.icon}</span>
+                    <span class="infinpilot-option-text" data-i18n="${option.name}">${option.name}</span>
                 </div>
             `;
         });
@@ -1285,7 +1285,7 @@ function hideOptionsBar() {
  * 处理选项点击
  */
 function handleOptionClick(event) {
-    const optionElement = event.target.closest('.pagetalk-option');
+    const optionElement = event.target.closest('.infinpilot-option');
     if (!optionElement) return;
 
     const optionId = optionElement.dataset.option;
@@ -1313,7 +1313,7 @@ async function showFunctionWindow(optionId) {
 
     // 创建功能窗口
     const functionWindow = document.createElement('div');
-    functionWindow.className = 'pagetalk-selection-helper pagetalk-function-window';
+    functionWindow.className = 'infinpilot-selection-helper infinpilot-function-window';
     functionWindow.dataset.option = optionId;
 
     // 修改：根据是否为对话窗口来设置初始宽度和高度
@@ -1327,7 +1327,7 @@ async function showFunctionWindow(optionId) {
 
     // 添加关闭按钮
     const closeButton = document.createElement('button');
-    closeButton.className = 'pagetalk-window-close';
+    closeButton.className = 'infinpilot-window-close';
     closeButton.innerHTML = '×';
     closeButton.style.cssText = `
         position: absolute;
@@ -1352,7 +1352,7 @@ async function showFunctionWindow(optionId) {
 
     // 添加最大化/还原按钮（位于关闭按钮左侧）
     const maximizeButton = document.createElement('button');
-    maximizeButton.className = 'pagetalk-window-maximize';
+    maximizeButton.className = 'infinpilot-window-maximize';
     // i18n: 设置按钮文案
     const _tr = getTranslationFunction();
     maximizeButton.setAttribute('aria-label', _tr('maximizeWindow'));
@@ -1456,7 +1456,7 @@ async function showFunctionWindow(optionId) {
         }
         // 放大/还原后维持聊天输入框焦点（若为对话窗口）
         if (optionId === 'chat') {
-            const textarea = functionWindow.querySelector('.pagetalk-chat-input textarea');
+            const textarea = functionWindow.querySelector('.infinpilot-chat-input textarea');
             if (textarea) {
                 setTimeout(() => textarea.focus(), 0);
             }
@@ -1693,12 +1693,12 @@ function hideFunctionWindow() {
  */
 function handleDocumentClick(event) {
     // 如果点击的是划词助手相关元素，不隐藏
-    if (event.target.closest('.pagetalk-selection-helper')) {
+    if (event.target.closest('.infinpilot-selection-helper')) {
         return;
     }
 
     // 如果点击的是功能窗口，不隐藏
-    if (event.target.closest('.pagetalk-function-window')) {
+    if (event.target.closest('.infinpilot-function-window')) {
         return;
     }
 
@@ -1770,7 +1770,7 @@ async function createFunctionWindowContent(windowElement, optionId) {
         try {
             // 尝试通过消息传递获取模型列表
             const response = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({ action: 'getAvailableModels' }, (response) => {
+                browser.runtime.sendMessage({ action: 'getAvailableModels' }, (response) => {
                     resolve(response);
                 });
             });
@@ -1854,7 +1854,7 @@ async function createFunctionWindowContent(windowElement, optionId) {
         let agentOptionsHTML = '';
         try {
             const result = await new Promise(resolve => {
-                chrome.storage.sync.get(['agents', 'currentAgentId'], resolve);
+                browser.storage.sync.get(['agents', 'currentAgentId'], resolve);
             });
 
             if (result.agents && Array.isArray(result.agents)) {
@@ -1877,30 +1877,30 @@ async function createFunctionWindowContent(windowElement, optionId) {
 
         // 对话功能窗口
         content = `
-            <div class="pagetalk-window-header">
-                <div class="pagetalk-window-controls">
-                    <select class="pagetalk-model-select">
+            <div class="infinpilot-window-header">
+                <div class="infinpilot-window-controls">
+                    <select class="infinpilot-model-select">
                         ${modelOptionsHTML}
                     </select>
-                    <select class="pagetalk-agent-select">
+                    <select class="infinpilot-agent-select">
                         ${agentOptionsHTML}
                     </select>
-                    <button class="pagetalk-clear-context" title="清除上下文">
+                    <button class="infinpilot-clear-context" title="清除上下文">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                             <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
                         </svg>
                     </button>
                 </div>
-                <div class="pagetalk-window-drag-handle"></div>
+                <div class="infinpilot-window-drag-handle"></div>
             </div>
-            <div class="pagetalk-quote-area">
-                <div class="pagetalk-quote-text" id="quote-text-${Date.now()}">"${selectedText}"</div>
+            <div class="infinpilot-quote-area">
+                <div class="infinpilot-quote-text" id="quote-text-${Date.now()}">"${selectedText}"</div>
             </div>
-            <div class="pagetalk-chat-messages"></div>
-            <div class="pagetalk-chat-input">
+            <div class="infinpilot-chat-messages"></div>
+            <div class="infinpilot-chat-input">
                 <textarea placeholder="输入消息..." rows="2"></textarea>
-                <button class="pagetalk-send-btn">
+                <button class="infinpilot-send-btn">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11v-.001ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
                     </svg>
@@ -1923,14 +1923,14 @@ async function createFunctionWindowContent(windowElement, optionId) {
         }
 
         content = `
-            <div class="pagetalk-window-header">
-                <div class="pagetalk-window-title">${title}</div>
-                <div class="pagetalk-window-drag-handle"></div>
+            <div class="infinpilot-window-header">
+                <div class="infinpilot-window-title">${title}</div>
+                <div class="infinpilot-window-drag-handle"></div>
             </div>
-            <div class="pagetalk-quote-area">
-                <div class="pagetalk-quote-text" id="quote-text-${Date.now()}">"${selectedText}"</div>
+            <div class="infinpilot-quote-area">
+                <div class="infinpilot-quote-text" id="quote-text-${Date.now()}">"${selectedText}"</div>
             </div>
-            <div class="pagetalk-response-area">
+            <div class="infinpilot-response-area">
                 <div class="thinking">
                     <div class="thinking-dots">
                         <span></span>
@@ -1966,10 +1966,10 @@ function setupFunctionWindowEvents(windowElement, optionId) {
 
     if (optionId === 'chat') {
         // 对话窗口事件
-        const sendBtn = windowElement.querySelector('.pagetalk-send-btn');
+        const sendBtn = windowElement.querySelector('.infinpilot-send-btn');
         const textarea = windowElement.querySelector('textarea');
-        const clearBtn = windowElement.querySelector('.pagetalk-clear-context');
-        const modelSelect = windowElement.querySelector('.pagetalk-model-select');
+        const clearBtn = windowElement.querySelector('.infinpilot-clear-context');
+        const modelSelect = windowElement.querySelector('.infinpilot-model-select');
 
         if (sendBtn && textarea) {
             sendBtn.addEventListener('click', (e) => {
@@ -2008,13 +2008,13 @@ function setupFunctionWindowEvents(windowElement, optionId) {
         }
 
         // 为聊天消息区域添加滚动监听器
-        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
         if (messagesArea) {
             setupScrollListener(messagesArea);
         }
     } else {
         // 为解读/翻译响应区域添加滚动监听器
-        const responseArea = windowElement.querySelector('.pagetalk-response-area');
+        const responseArea = windowElement.querySelector('.infinpilot-response-area');
         if (responseArea) {
             setupScrollListener(responseArea);
         }
@@ -2107,12 +2107,12 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
         // --- 修改结束 ---
 
         // 准备响应区域
-        const responseArea = windowElement.querySelector('.pagetalk-response-area');
+        const responseArea = windowElement.querySelector('.infinpilot-response-area');
         if (responseArea) {
             responseArea.innerHTML = `
-                <div class="pagetalk-response-content markdown-rendered"></div>
-                <div class="pagetalk-response-actions">
-                    <button class="pagetalk-copy-btn" data-i18n-title="copyAll" title="复制">
+                <div class="infinpilot-response-content markdown-rendered"></div>
+                <div class="infinpilot-response-actions">
+                    <button class="infinpilot-copy-btn" data-i18n-title="copyAll" title="复制">
                         <svg class="copy-icon" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
                             <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
@@ -2121,7 +2121,7 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
                             <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
                         </svg>
                     </button>
-                    <button class="pagetalk-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
+                    <button class="infinpilot-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
@@ -2131,7 +2131,7 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
             `;
         }
 
-        const responseContent = windowElement.querySelector('.pagetalk-response-content');
+        const responseContent = windowElement.querySelector('.infinpilot-response-content');
         let fullResponse = '';
 
         // 发送到 AI API (流式输出)
@@ -2150,7 +2150,7 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
 
                 // 如果还在流式输出中，添加光标
                 if (!isComplete) {
-                    renderedContent += '<span class="pagetalk-streaming-cursor"></span>';
+                    renderedContent += '<span class="infinpilot-streaming-cursor"></span>';
                 }
 
                 responseContent.innerHTML = renderedContent;
@@ -2163,7 +2163,7 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
                 codeBlocks.forEach(addCopyButtonToCodeBlock);
 
                 // 条件滚动：只有当用户没有向上滚动时才自动滚动
-                const responseArea = windowElement.querySelector('.pagetalk-response-area');
+                const responseArea = windowElement.querySelector('.infinpilot-response-area');
                 if (responseArea && !functionWindowScrolledUp) {
                     responseArea.scrollTop = responseArea.scrollHeight;
                 }
@@ -2189,8 +2189,8 @@ async function sendInterpretOrTranslateRequest(windowElement, optionId) {
  * 设置响应按钮事件
  */
 function setupResponseActions(windowElement, response, optionId) {
-    const copyBtn = windowElement.querySelector('.pagetalk-copy-btn');
-    const regenerateBtn = windowElement.querySelector('.pagetalk-regenerate-btn');
+    const copyBtn = windowElement.querySelector('.infinpilot-copy-btn');
+    const regenerateBtn = windowElement.querySelector('.infinpilot-regenerate-btn');
 
     if (copyBtn) {
         copyBtn.addEventListener('click', (e) => {
@@ -2226,7 +2226,7 @@ function setupResponseActions(windowElement, response, optionId) {
             console.log('[TextSelectionHelper] Regenerating for option:', optionId);
 
             // 显示思考动画
-            const responseArea = windowElement.querySelector('.pagetalk-response-area');
+            const responseArea = windowElement.querySelector('.infinpilot-response-area');
             if (responseArea) {
                 responseArea.innerHTML = `
                     <div class="thinking">
@@ -2251,18 +2251,18 @@ function setupResponseActions(windowElement, response, optionId) {
  * 显示错误信息
  */
 function displayError(windowElement, errorMessage) {
-    const responseArea = windowElement.querySelector('.pagetalk-response-area');
+    const responseArea = windowElement.querySelector('.infinpilot-response-area');
     if (!responseArea) return;
 
     const _tr = getTranslationFunction();
     responseArea.innerHTML = `
-        <div class="pagetalk-error">
-            <div class="pagetalk-error-message">${_tr('error')}: ${errorMessage}</div>
-            <button class="pagetalk-retry-btn">${_tr('retry')}</button>
+        <div class="infinpilot-error">
+            <div class="infinpilot-error-message">${_tr('error')}: ${errorMessage}</div>
+            <button class="infinpilot-retry-btn">${_tr('retry')}</button>
         </div>
     `;
 
-    const retryBtn = responseArea.querySelector('.pagetalk-retry-btn');
+    const retryBtn = responseArea.querySelector('.infinpilot-retry-btn');
     if (retryBtn) {
         retryBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2277,7 +2277,7 @@ function displayError(windowElement, errorMessage) {
  * 使功能窗口可拖拽
  */
 function makeFunctionWindowDraggable(windowElement) {
-    const dragHandle = windowElement.querySelector('.pagetalk-window-header');
+    const dragHandle = windowElement.querySelector('.infinpilot-window-header');
     if (!dragHandle) return;
 
     let isDragging = false;
@@ -2338,7 +2338,7 @@ function makeFunctionWindowDraggable(windowElement) {
  */
 async function sendChatMessage(windowElement) {
     const textarea = windowElement.querySelector('textarea');
-    const sendBtn = windowElement.querySelector('.pagetalk-send-btn');
+    const sendBtn = windowElement.querySelector('.infinpilot-send-btn');
     const message = textarea.value.trim();
 
     if (!message) return;
@@ -2440,11 +2440,11 @@ async function sendChatMessage(windowElement) {
         shouldAdjustHeight = true;
 
         // 添加独立的思考动画（不在聊天气泡内）
-        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
         const thinkingElement = document.createElement('div');
-        thinkingElement.className = 'pagetalk-thinking-message';
+        thinkingElement.className = 'infinpilot-thinking-message';
         thinkingElement.innerHTML = `
-            <div class="pagetalk-thinking-bubble">
+            <div class="infinpilot-thinking-bubble">
                 <div class="thinking-dots">
                     <span></span>
                     <span></span>
@@ -2461,12 +2461,12 @@ async function sendChatMessage(windowElement) {
 
         // 创建AI消息元素用于流式更新
         const aiMessageElement = document.createElement('div');
-        aiMessageElement.className = 'pagetalk-chat-message pagetalk-chat-message-assistant';
+        aiMessageElement.className = 'infinpilot-chat-message infinpilot-chat-message-assistant';
         aiMessageElement.dataset.messageId = `assistant-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         aiMessageElement.innerHTML = `
-            <div class="pagetalk-message-content markdown-rendered">
-                <div class="pagetalk-message-actions">
-                    <button class="pagetalk-copy-btn" data-i18n-title="copyAll" title="复制">
+            <div class="infinpilot-message-content markdown-rendered">
+                <div class="infinpilot-message-actions">
+                    <button class="infinpilot-copy-btn" data-i18n-title="copyAll" title="复制">
                         <svg class="copy-icon" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
                             <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
@@ -2475,13 +2475,13 @@ async function sendChatMessage(windowElement) {
                             <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
                         </svg>
                     </button>
-                    <button class="pagetalk-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
+                    <button class="infinpilot-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
                         </svg>
                     </button>
-                    <button class="pagetalk-delete-btn" data-i18n-title="deleteMessage" title="删除">
+                    <button class="infinpilot-delete-btn" data-i18n-title="deleteMessage" title="删除">
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                             <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -2491,11 +2491,11 @@ async function sendChatMessage(windowElement) {
             </div>
         `;
 
-        const messageContent = aiMessageElement.querySelector('.pagetalk-message-content');
+        const messageContent = aiMessageElement.querySelector('.infinpilot-message-content');
         let fullResponse = '';
 
         // 获取当前窗口选择的模型
-        const modelSelect = windowElement.querySelector('.pagetalk-model-select');
+        const modelSelect = windowElement.querySelector('.infinpilot-model-select');
         const currentModel = modelSelect ? modelSelect.value : 'google::gemini-2.5-flash';
 
         const temperature = currentAgent ? currentAgent.temperature : 0.7;
@@ -2532,11 +2532,11 @@ async function sendChatMessage(windowElement) {
 
                 // 如果还在流式输出中，添加光标
                 if (!isComplete) {
-                    renderedContent += '<span class="pagetalk-streaming-cursor"></span>';
+                    renderedContent += '<span class="infinpilot-streaming-cursor"></span>';
                 }
 
                 // 保存按钮容器
-                const actionsContainer = messageContent.querySelector('.pagetalk-message-actions');
+                const actionsContainer = messageContent.querySelector('.infinpilot-message-actions');
 
                 // 更新内容，但保留按钮容器
                 messageContent.innerHTML = renderedContent;
@@ -2573,7 +2573,7 @@ async function sendChatMessage(windowElement) {
                 const currentState = streamingStates.get(windowId);
                 if (currentState && currentState.streamListener) {
                     try {
-                        chrome.runtime.onMessage.removeListener(currentState.streamListener);
+                        browser.runtime.onMessage.removeListener(currentState.streamListener);
                         console.log('[TextSelectionHelper] Removed completed stream listener for window:', windowId);
                     } catch (error) {
                         console.log('[TextSelectionHelper] Failed to remove completed listener:', error.message);
@@ -2598,9 +2598,9 @@ async function sendChatMessage(windowElement) {
         console.error('[TextSelectionHelper] Chat error:', error);
 
         // 清除思考动画（如果存在）
-        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
         if (messagesArea) {
-            const thinkingElements = messagesArea.querySelectorAll('.pagetalk-thinking-message');
+            const thinkingElements = messagesArea.querySelectorAll('.infinpilot-thinking-message');
             thinkingElements.forEach(element => {
                 element.remove();
             });
@@ -2612,7 +2612,7 @@ async function sendChatMessage(windowElement) {
         const currentState = streamingStates.get(windowId);
         if (currentState && currentState.streamListener) {
             try {
-                chrome.runtime.onMessage.removeListener(currentState.streamListener);
+                browser.runtime.onMessage.removeListener(currentState.streamListener);
                 console.log('[TextSelectionHelper] Removed error stream listener for window:', windowId);
             } catch (listenerError) {
                 console.log('[TextSelectionHelper] Failed to remove error listener:', listenerError.message);
@@ -2647,7 +2647,7 @@ function clearChatContext(windowElement) {
     }
 
     // 如果没有流式输出，正常清除消息
-    const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+    const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
     if (messagesArea) {
         messagesArea.innerHTML = '';
     }
@@ -2660,17 +2660,17 @@ function clearChatContext(windowElement) {
  * 添加聊天消息
  */
 function addChatMessage(windowElement, message, role) {
-    const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+    const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
     if (!messagesArea) return;
 
     const messageElement = document.createElement('div');
-    messageElement.className = `pagetalk-chat-message pagetalk-chat-message-${role}`;
+    messageElement.className = `infinpilot-chat-message infinpilot-chat-message-${role}`;
     messageElement.dataset.messageId = `${role}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     messageElement.innerHTML = `
-        <div class="pagetalk-message-content">
+        <div class="infinpilot-message-content">
             ${message}
-            <div class="pagetalk-message-actions">
-            <button class="pagetalk-copy-btn" data-i18n-title="copyAll" title="复制">
+            <div class="infinpilot-message-actions">
+            <button class="infinpilot-copy-btn" data-i18n-title="copyAll" title="复制">
                 <svg class="copy-icon" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
                     <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
@@ -2679,13 +2679,13 @@ function addChatMessage(windowElement, message, role) {
                     <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
                 </svg>
             </button>
-            <button class="pagetalk-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
+            <button class="infinpilot-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                     <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
                 </svg>
             </button>
-            <button class="pagetalk-delete-btn" data-i18n-title="deleteMessage" title="删除">
+            <button class="infinpilot-delete-btn" data-i18n-title="deleteMessage" title="删除">
                 <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                     <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -2699,7 +2699,7 @@ function addChatMessage(windowElement, message, role) {
 
     // 保持引用区域始终显示，不再隐藏
     // 注释掉原有的隐藏逻辑，让用户始终能看到对话的上下文
-    // const quoteArea = windowElement.querySelector('.pagetalk-quote-area');
+    // const quoteArea = windowElement.querySelector('.infinpilot-quote-area');
     // if (quoteArea && role === 'user') {
     //     quoteArea.style.display = 'none';
     // }
@@ -2723,9 +2723,9 @@ function setupChatMessageActions(messageElement, message) {
         return;
     }
 
-    const copyBtn = messageElement.querySelector('.pagetalk-copy-btn');
-    const deleteBtn = messageElement.querySelector('.pagetalk-delete-btn');
-    const regenerateBtn = messageElement.querySelector('.pagetalk-regenerate-btn');
+    const copyBtn = messageElement.querySelector('.infinpilot-copy-btn');
+    const deleteBtn = messageElement.querySelector('.infinpilot-delete-btn');
+    const regenerateBtn = messageElement.querySelector('.infinpilot-regenerate-btn');
 
     if (copyBtn) {
         copyBtn.addEventListener('click', (e) => {
@@ -2764,7 +2764,7 @@ function setupChatMessageActions(messageElement, message) {
             e.stopPropagation();
 
             // 找到包含此消息的窗口
-            const windowElement = messageElement.closest('.pagetalk-function-window');
+            const windowElement = messageElement.closest('.infinpilot-function-window');
             if (windowElement) {
                 // 获取窗口ID并检查是否正在流式输出
                 const windowId = windowElement.dataset.windowId;
@@ -2786,16 +2786,16 @@ function setupChatMessageActions(messageElement, message) {
 
                 function performRegenerate() {
                     // 判断是用户消息还是助手消息
-                    const isUserMessage = messageElement.classList.contains('pagetalk-chat-message-user');
-                    const isAssistantMessage = messageElement.classList.contains('pagetalk-chat-message-assistant');
+                    const isUserMessage = messageElement.classList.contains('infinpilot-chat-message-user');
+                    const isAssistantMessage = messageElement.classList.contains('infinpilot-chat-message-assistant');
 
                     if (isUserMessage) {
                         // 用户消息：重新发送这条消息
-                        const userText = messageElement.querySelector('.pagetalk-message-content').textContent;
+                        const userText = messageElement.querySelector('.infinpilot-message-content').textContent;
 
                         // 移除当前消息及其后的所有消息
-                        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
-                        const allMessages = Array.from(messagesArea.querySelectorAll('.pagetalk-chat-message'));
+                        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
+                        const allMessages = Array.from(messagesArea.querySelectorAll('.infinpilot-chat-message'));
                         const currentIndex = allMessages.indexOf(messageElement);
                         const deletedCount = allMessages.length - currentIndex;
 
@@ -2839,11 +2839,11 @@ function setupChatMessageActions(messageElement, message) {
                         }
 
                         // 获取最后一个用户消息
-                        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
-                        const userMessages = messagesArea.querySelectorAll('.pagetalk-chat-message-user');
+                        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
+                        const userMessages = messagesArea.querySelectorAll('.infinpilot-chat-message-user');
                         if (userMessages.length > 0) {
                             const lastUserMessage = userMessages[userMessages.length - 1];
-                            const userText = lastUserMessage.querySelector('.pagetalk-message-content').textContent;
+                            const userText = lastUserMessage.querySelector('.infinpilot-message-content').textContent;
 
                             // 延迟执行，避免事件冲突
                             setTimeout(() => {
@@ -2939,15 +2939,15 @@ async function regenerateChatMessage(windowElement, userMessage) {
         streamingStates.set(windowId, { isStreaming: true, requestId: requestId, streamListener: null });
 
         // 更新发送按钮为暂停状态
-        const sendBtn = windowElement.querySelector('.pagetalk-send-btn');
+        const sendBtn = windowElement.querySelector('.infinpilot-send-btn');
         updateSendButtonToStopState(sendBtn, windowId);
 
         // 添加独立的思考动画（不在聊天气泡内）
-        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
         const thinkingElement = document.createElement('div');
-        thinkingElement.className = 'pagetalk-thinking-message';
+        thinkingElement.className = 'infinpilot-thinking-message';
         thinkingElement.innerHTML = `
-            <div class="pagetalk-thinking-bubble">
+            <div class="infinpilot-thinking-bubble">
                 <div class="thinking-dots">
                     <span></span>
                     <span></span>
@@ -2968,12 +2968,12 @@ async function regenerateChatMessage(windowElement, userMessage) {
 
         // 创建AI消息元素用于流式更新
         const aiMessageElement = document.createElement('div');
-        aiMessageElement.className = 'pagetalk-chat-message pagetalk-chat-message-assistant';
+        aiMessageElement.className = 'infinpilot-chat-message infinpilot-chat-message-assistant';
         aiMessageElement.dataset.messageId = `assistant-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         aiMessageElement.innerHTML = `
-            <div class="pagetalk-message-content markdown-rendered">
-                <div class="pagetalk-message-actions">
-                    <button class="pagetalk-copy-btn" data-i18n-title="copyAll" title="复制">
+            <div class="infinpilot-message-content markdown-rendered">
+                <div class="infinpilot-message-actions">
+                    <button class="infinpilot-copy-btn" data-i18n-title="copyAll" title="复制">
                         <svg class="copy-icon" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
                             <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
@@ -2982,13 +2982,13 @@ async function regenerateChatMessage(windowElement, userMessage) {
                             <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
                         </svg>
                     </button>
-                    <button class="pagetalk-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
+                    <button class="infinpilot-regenerate-btn" data-i18n-title="regenerate" title="重新生成">
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
                             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
                         </svg>
                     </button>
-                    <button class="pagetalk-delete-btn" data-i18n-title="deleteMessage" title="删除">
+                    <button class="infinpilot-delete-btn" data-i18n-title="deleteMessage" title="删除">
                         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                             <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -2998,11 +2998,11 @@ async function regenerateChatMessage(windowElement, userMessage) {
             </div>
         `;
 
-        const messageContent = aiMessageElement.querySelector('.pagetalk-message-content');
+        const messageContent = aiMessageElement.querySelector('.infinpilot-message-content');
         let fullResponse = '';
 
         // 获取当前窗口选择的模型
-        const modelSelect = windowElement.querySelector('.pagetalk-model-select');
+        const modelSelect = windowElement.querySelector('.infinpilot-model-select');
         const currentModel = modelSelect ? modelSelect.value : 'google::gemini-2.5-flash';
 
         const temperature = currentAgent ? currentAgent.temperature : 0.7;
@@ -3039,11 +3039,11 @@ async function regenerateChatMessage(windowElement, userMessage) {
 
                 // 如果还在流式输出中，添加光标
                 if (!isComplete) {
-                    renderedContent += '<span class="pagetalk-streaming-cursor"></span>';
+                    renderedContent += '<span class="infinpilot-streaming-cursor"></span>';
                 }
 
                 // 保存按钮容器
-                const actionsContainer = messageContent.querySelector('.pagetalk-message-actions');
+                const actionsContainer = messageContent.querySelector('.infinpilot-message-actions');
 
                 // 更新内容，但保留按钮容器
                 messageContent.innerHTML = renderedContent;
@@ -3077,7 +3077,7 @@ async function regenerateChatMessage(windowElement, userMessage) {
                 const currentState = streamingStates.get(windowId);
                 if (currentState && currentState.streamListener) {
                     try {
-                        chrome.runtime.onMessage.removeListener(currentState.streamListener);
+                        browser.runtime.onMessage.removeListener(currentState.streamListener);
                         console.log('[TextSelectionHelper] Removed completed regenerate stream listener for window:', windowId);
                     } catch (error) {
                         console.log('[TextSelectionHelper] Failed to remove completed regenerate listener:', error.message);
@@ -3097,9 +3097,9 @@ async function regenerateChatMessage(windowElement, userMessage) {
         console.error('[TextSelectionHelper] Regenerate chat error:', error);
 
         // 清除思考动画（如果存在）
-        const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+        const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
         if (messagesArea) {
-            const thinkingElements = messagesArea.querySelectorAll('.pagetalk-thinking-message');
+            const thinkingElements = messagesArea.querySelectorAll('.infinpilot-thinking-message');
             thinkingElements.forEach(element => {
                 element.remove();
             });
@@ -3111,7 +3111,7 @@ async function regenerateChatMessage(windowElement, userMessage) {
         const currentState = streamingStates.get(windowId);
         if (currentState && currentState.streamListener) {
             try {
-                chrome.runtime.onMessage.removeListener(currentState.streamListener);
+                browser.runtime.onMessage.removeListener(currentState.streamListener);
                 console.log('[TextSelectionHelper] Removed regenerate error stream listener for window:', windowId);
             } catch (listenerError) {
                 console.log('[TextSelectionHelper] Failed to remove regenerate error listener:', listenerError.message);
@@ -3130,22 +3130,22 @@ async function regenerateChatMessage(windowElement, userMessage) {
 function deleteChatMessage(messageElement) {
     if (!messageElement) return;
 
-    const windowElement = messageElement.closest('.pagetalk-function-window');
+    const windowElement = messageElement.closest('.infinpilot-function-window');
     if (!windowElement) return;
 
-    const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+    const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
     if (!messagesArea) return;
 
     // 获取窗口ID
     const windowId = windowElement.dataset.windowId;
 
     // 判断是用户消息还是助手消息
-    const isUserMessage = messageElement.classList.contains('pagetalk-chat-message-user');
-    const isAssistantMessage = messageElement.classList.contains('pagetalk-chat-message-assistant');
+    const isUserMessage = messageElement.classList.contains('infinpilot-chat-message-user');
+    const isAssistantMessage = messageElement.classList.contains('infinpilot-chat-message-assistant');
 
     if (isUserMessage) {
         // 删除用户消息：需要删除该消息及其后的所有消息（包括对应的助手回复）
-        const allMessages = Array.from(messagesArea.querySelectorAll('.pagetalk-chat-message'));
+        const allMessages = Array.from(messagesArea.querySelectorAll('.infinpilot-chat-message'));
         const currentIndex = allMessages.indexOf(messageElement);
         const deletedCount = allMessages.length - currentIndex;
 
@@ -3227,22 +3227,22 @@ async function callAIAPI(messages, model, temperature, onStream, maxOutputLength
                 }
                 if (message.isComplete) {
                     if (onStream) onStream(accumulatedText, true);
-                    chrome.runtime.onMessage.removeListener(streamListener);
+                    browser.runtime.onMessage.removeListener(streamListener);
                 }
             }
         };
-        chrome.runtime.onMessage.addListener(streamListener);
+        browser.runtime.onMessage.addListener(streamListener);
 
         const response = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({
+            browser.runtime.sendMessage({
                 action: 'callUnifiedAPI',
                 model: model,
                 messages: messages, // 直接传递消息数组
                 options: callOptions,
                 streamId: streamId
             }, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(new Error(chrome.runtime.lastError.message));
+                if (browser.runtime.lastError) {
+                    reject(new Error(browser.runtime.lastError.message));
                 } else if (response && response.success) {
                     resolve(response.response);
                 } else {
@@ -3269,7 +3269,7 @@ async function getTextSelectionHelperSettings() {
             // 获取当前语言设置
             const currentLanguage = await getCurrentLanguage();
 
-            chrome.storage.local.get(['textSelectionHelperSettings'], (result) => {
+            browser.storage.local.get(['textSelectionHelperSettings'], (result) => {
                 // 使用translations.js中的默认提示词
                 const interpretPrompt = window.getDefaultPrompt ? window.getDefaultPrompt('interpret', currentLanguage) :
                     (trTSH('defaultInterpretPrompt') || '请解释一下：');
@@ -3407,7 +3407,7 @@ async function getTextSelectionHelperSettings() {
  */
 function getCurrentMainPanelModel() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['model'], (result) => {
+        browser.storage.sync.get(['model'], (result) => {
             resolve(result.model || 'google::gemini-2.5-flash');
         });
     });
@@ -3418,7 +3418,7 @@ function getCurrentMainPanelModel() {
  */
 function getCurrentMainPanelAgent() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['agents', 'currentAgentId'], (result) => {
+        browser.storage.sync.get(['agents', 'currentAgentId'], (result) => {
             if (result.agents && result.currentAgentId) {
                 const currentAgent = result.agents.find(agent => agent.id === result.currentAgentId);
                 resolve(currentAgent || null);
@@ -3434,7 +3434,7 @@ function getCurrentMainPanelAgent() {
  */
 function getCurrentWindowAgent(windowElement) {
     return new Promise((resolve) => {
-        const agentSelect = windowElement.querySelector('.pagetalk-agent-select');
+        const agentSelect = windowElement.querySelector('.infinpilot-agent-select');
         const selectedAgentId = agentSelect ? agentSelect.value : null;
 
         if (!selectedAgentId || selectedAgentId === 'default') {
@@ -3443,7 +3443,7 @@ function getCurrentWindowAgent(windowElement) {
             return;
         }
 
-        chrome.storage.sync.get(['agents'], (result) => {
+        browser.storage.sync.get(['agents'], (result) => {
             if (result.agents && Array.isArray(result.agents)) {
                 const selectedAgent = result.agents.find(agent => agent.id === selectedAgentId);
                 resolve(selectedAgent || null);
@@ -3460,7 +3460,7 @@ function getCurrentWindowAgent(windowElement) {
 function updateSendButtonToStopState(sendBtn, windowId) {
     if (!sendBtn) return;
 
-    sendBtn.classList.add('pagetalk-stop-streaming');
+    sendBtn.classList.add('infinpilot-stop-streaming');
     sendBtn.title = '停止生成';
     sendBtn.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -3485,10 +3485,10 @@ function updateSendButtonToStopState(sendBtn, windowId) {
  * 恢复发送按钮为正常状态
  */
 function restoreSendButtonToNormalState(windowElement) {
-    const sendBtn = windowElement.querySelector('.pagetalk-send-btn');
+    const sendBtn = windowElement.querySelector('.infinpilot-send-btn');
     if (!sendBtn) return;
 
-    sendBtn.classList.remove('pagetalk-stop-streaming');
+    sendBtn.classList.remove('infinpilot-stop-streaming');
     sendBtn.title = '发送';
     sendBtn.innerHTML = `
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -3526,7 +3526,7 @@ function abortStreaming(windowId, keepMessages = true) {
     // 发送中断消息到background.js
     if (streamingState.requestId) {
         try {
-            chrome.runtime.sendMessage({
+            browser.runtime.sendMessage({
                 action: 'abortRequest',
                 requestId: streamingState.requestId
             }).catch(error => {
@@ -3542,7 +3542,7 @@ function abortStreaming(windowId, keepMessages = true) {
     // 移除流式监听器（重要：防止竞态条件）
     if (streamingState.streamListener) {
         try {
-            chrome.runtime.onMessage.removeListener(streamingState.streamListener);
+            browser.runtime.onMessage.removeListener(streamingState.streamListener);
             console.log('[TextSelectionHelper] Removed stream listener for window:', windowId);
         } catch (error) {
             console.log('[TextSelectionHelper] Failed to remove listener:', error.message);
@@ -3553,14 +3553,14 @@ function abortStreaming(windowId, keepMessages = true) {
     streamingStates.delete(windowId);
 
     // 获取窗口元素
-    const windowElement = document.querySelector(`.pagetalk-function-window[data-window-id="${windowId}"]`);
+    const windowElement = document.querySelector(`.infinpilot-function-window[data-window-id="${windowId}"]`);
     if (windowElement) {
         // 恢复发送按钮状态
         restoreSendButtonToNormalState(windowElement);
 
         if (!keepMessages) {
             // 如果不保留消息，清除所有聊天消息和历史记录
-            const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+            const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
             if (messagesArea) {
                 messagesArea.innerHTML = '';
             }
@@ -3568,29 +3568,29 @@ function abortStreaming(windowId, keepMessages = true) {
             clearChatHistory(windowId);
         } else {
             // 如果保留消息，移除正在输出的消息中的流式光标和思考动画
-            const streamingCursors = windowElement.querySelectorAll('.pagetalk-streaming-cursor');
+            const streamingCursors = windowElement.querySelectorAll('.infinpilot-streaming-cursor');
             streamingCursors.forEach(cursor => cursor.remove());
 
             // 移除思考动画（如果存在）
-            const thinkingElements = windowElement.querySelectorAll('.pagetalk-thinking-message');
+            const thinkingElements = windowElement.querySelectorAll('.infinpilot-thinking-message');
             thinkingElements.forEach(element => {
                 element.remove();
             });
 
             // 确保未完成的AI消息有按钮事件（重要：让用户能点击重新生成）
-            const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
+            const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
             if (messagesArea) {
-                const assistantMessages = messagesArea.querySelectorAll('.pagetalk-chat-message-assistant');
+                const assistantMessages = messagesArea.querySelectorAll('.infinpilot-chat-message-assistant');
                 assistantMessages.forEach(messageElement => {
                     // 检查是否已经设置过事件
                     if (messageElement.dataset.actionsSetup !== 'true') {
-                        const regenerateBtn = messageElement.querySelector('.pagetalk-regenerate-btn');
-                        const copyBtn = messageElement.querySelector('.pagetalk-copy-btn');
-                        const deleteBtn = messageElement.querySelector('.pagetalk-delete-btn');
+                        const regenerateBtn = messageElement.querySelector('.infinpilot-regenerate-btn');
+                        const copyBtn = messageElement.querySelector('.infinpilot-copy-btn');
+                        const deleteBtn = messageElement.querySelector('.infinpilot-delete-btn');
 
                         // 如果按钮存在但没有事件，重新设置
                         if (regenerateBtn || copyBtn || deleteBtn) {
-                            const messageContent = messageElement.querySelector('.pagetalk-message-content');
+                            const messageContent = messageElement.querySelector('.infinpilot-message-content');
                             const messageText = messageContent ? messageContent.textContent : '';
                             console.log('[TextSelectionHelper] Setting up actions for incomplete message');
                             setupChatMessageActions(messageElement, messageText);
@@ -3699,11 +3699,11 @@ function adjustWindowSize(windowElement) {
         }
 
         // 检查是否是对话窗口
-        const isChatWindow = windowElement.querySelector('.pagetalk-chat-messages') !== null;
+        const isChatWindow = windowElement.querySelector('.infinpilot-chat-messages') !== null;
         console.log(`[TextSelectionHelper] adjustWindowSize called for ${isChatWindow ? 'chat' : 'translate/interpret'} window`);
 
         // 保存滚动位置
-        const scrollContainer = windowElement.querySelector('.pagetalk-chat-messages, .pagetalk-response-area');
+        const scrollContainer = windowElement.querySelector('.infinpilot-chat-messages, .infinpilot-response-area');
         const originalScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
 
         // --- 高度计算 ---
@@ -3711,10 +3711,10 @@ function adjustWindowSize(windowElement) {
 
         if (isChatWindow) {
             // 对话窗口特殊处理：计算所有组件的高度总和
-            const header = windowElement.querySelector('.pagetalk-window-header');
-            const quoteArea = windowElement.querySelector('.pagetalk-quote-area');
-            const messagesArea = windowElement.querySelector('.pagetalk-chat-messages');
-            const inputArea = windowElement.querySelector('.pagetalk-chat-input');
+            const header = windowElement.querySelector('.infinpilot-window-header');
+            const quoteArea = windowElement.querySelector('.infinpilot-quote-area');
+            const messagesArea = windowElement.querySelector('.infinpilot-chat-messages');
+            const inputArea = windowElement.querySelector('.infinpilot-chat-input');
 
             let totalHeight = 0;
 
@@ -3836,8 +3836,8 @@ function adjustWindowSize(windowElement) {
 function initQuoteCollapse(windowElement) {
     // 延迟执行，确保DOM完全渲染
     setTimeout(() => {
-        const quoteArea = windowElement.querySelector('.pagetalk-quote-area');
-        const quoteText = windowElement.querySelector('.pagetalk-quote-text');
+        const quoteArea = windowElement.querySelector('.infinpilot-quote-area');
+        const quoteText = windowElement.querySelector('.infinpilot-quote-text');
 
         console.log('[TextSelectionHelper] initQuoteCollapse - elements found:', {
             quoteArea: !!quoteArea,
@@ -3873,7 +3873,7 @@ function initQuoteCollapse(windowElement) {
 
             // 创建展开/折叠按钮
             const toggleBtn = document.createElement('div');
-            toggleBtn.className = 'pagetalk-quote-toggle';
+            toggleBtn.className = 'infinpilot-quote-toggle';
             toggleBtn.textContent = '展开';
 
             console.log('[TextSelectionHelper] Adding collapse toggle button');
@@ -3956,7 +3956,7 @@ function updateFunctionWindowLanguage(windowElement, newLanguage) {
     const _tr = getTranslationFunction();
 
     // 更新窗口标题
-    const titleElement = windowElement.querySelector('.pagetalk-window-title');
+    const titleElement = windowElement.querySelector('.infinpilot-window-title');
     if (titleElement) {
         const optionType = windowElement.dataset.option;
         if (optionType) {
@@ -3965,38 +3965,38 @@ function updateFunctionWindowLanguage(windowElement, newLanguage) {
     }
 
     // 更新按钮文本
-    const copyButtons = windowElement.querySelectorAll('.pagetalk-copy-btn');
+    const copyButtons = windowElement.querySelectorAll('.infinpilot-copy-btn');
     copyButtons.forEach(btn => {
         btn.textContent = _tr('copy');
         btn.title = _tr('copy');
     });
 
-    const regenerateButtons = windowElement.querySelectorAll('.pagetalk-regenerate-btn');
+    const regenerateButtons = windowElement.querySelectorAll('.infinpilot-regenerate-btn');
     regenerateButtons.forEach(btn => {
         btn.textContent = _tr('regenerateResponse');
         btn.title = _tr('regenerateResponse');
     });
 
     // 更新输入框占位符（对话功能）
-    const inputElement = windowElement.querySelector('.pagetalk-chat-input');
+    const inputElement = windowElement.querySelector('.infinpilot-chat-input');
     if (inputElement) {
         inputElement.placeholder = _tr('userInputPlaceholder');
     }
 
     // 更新发送按钮标题
-    const sendButton = windowElement.querySelector('.pagetalk-send-btn');
+    const sendButton = windowElement.querySelector('.infinpilot-send-btn');
     if (sendButton) {
         sendButton.title = _tr('sendMessageTitle');
     }
 
     // 更新模型选择器标签
-    const modelLabel = windowElement.querySelector('.pagetalk-model-label');
+    const modelLabel = windowElement.querySelector('.infinpilot-model-label');
     if (modelLabel) {
         modelLabel.textContent = _tr('modelLabel');
     }
 
     // 更新助手选择器标签
-    const agentLabel = windowElement.querySelector('.pagetalk-agent-label');
+    const agentLabel = windowElement.querySelector('.infinpilot-agent-label');
     if (agentLabel) {
         agentLabel.textContent = _tr('agentLabel');
     }
@@ -4141,7 +4141,7 @@ function showMermaidModal(svgContent) {
 
     // 创建模态框
     const modal = document.createElement('div');
-    modal.className = 'pagetalk-mermaid-modal';
+    modal.className = 'infinpilot-mermaid-modal';
     modal.style.cssText = `
         position: fixed;
         top: 0;
@@ -4159,7 +4159,7 @@ function showMermaidModal(svgContent) {
     `;
 
     const content = document.createElement('div');
-    content.className = 'pagetalk-mermaid-modal-content';
+    content.className = 'infinpilot-mermaid-modal-content';
     content.style.cssText = `
         margin: auto;
         display: flex;
@@ -4174,7 +4174,7 @@ function showMermaidModal(svgContent) {
 
     // 添加关闭按钮
     const closeButton = document.createElement('span');
-    closeButton.className = 'pagetalk-mermaid-close-modal';
+    closeButton.className = 'infinpilot-mermaid-close-modal';
     closeButton.innerHTML = '&times;';
     closeButton.style.cssText = `
         position: absolute;
@@ -4299,7 +4299,7 @@ function showMermaidModal(svgContent) {
 }
 
 // 全局消息监听器 - 处理模型更新等事件
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'modelsUpdated') {
         // 模型列表更新时刷新所有窗口的模型选择器
         console.log('[TextSelectionHelper] Models updated, refreshing model selectors...');
@@ -4314,7 +4314,7 @@ async function refreshAllModelSelectors() {
     try {
         // 获取最新的模型列表
         const response = await new Promise((resolve) => {
-            chrome.runtime.sendMessage({ action: 'getAvailableModels' }, (response) => {
+            browser.runtime.sendMessage({ action: 'getAvailableModels' }, (response) => {
                 resolve(response);
             });
         });
@@ -4324,9 +4324,9 @@ async function refreshAllModelSelectors() {
             console.log('[TextSelectionHelper] Refreshing with new models:', modelOptions);
 
             // 更新所有现有窗口的模型选择器
-            const allWindows = document.querySelectorAll('.pagetalk-function-window');
+            const allWindows = document.querySelectorAll('.infinpilot-function-window');
             allWindows.forEach(windowElement => {
-                const modelSelect = windowElement.querySelector('.pagetalk-model-select');
+                const modelSelect = windowElement.querySelector('.infinpilot-model-select');
                 if (modelSelect) {
                     const currentValue = modelSelect.value;
 

@@ -1,10 +1,22 @@
 /**
- * PageTalk - 统一代理请求工具
+ * InfinPilot - 统一代理请求工具
  * 
  * 提供统一的代理请求功能，支持所有AI API供应商
  */
 
 import { providers } from '../providerManager.js';
+
+function getExtensionStorage() {
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+        return chrome.storage;
+    }
+
+    if (typeof browser !== 'undefined' && browser.storage) {
+        return browser.storage;
+    }
+
+    return null;
+}
 
 // 维护一个可动态扩展的域名集合
 const aiApiDomainSet = new Set([
@@ -36,8 +48,9 @@ try {
 
 // 异步合并自定义提供商域名（不阻塞首次调用）
 try {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get(['customProviders'], (result) => {
+    const storage = getExtensionStorage();
+    if (storage && storage.sync && storage.sync.get) {
+        Promise.resolve(storage.sync.get(['customProviders'])).then((result) => {
             if (result && Array.isArray(result.customProviders)) {
                 result.customProviders.forEach(p => {
                     if (p && p.apiHost) {
@@ -48,7 +61,7 @@ try {
                     }
                 });
             }
-        });
+        }).catch(() => {});
     }
 } catch (_) { /* 忽略 */ }
 
@@ -91,8 +104,9 @@ export async function makeProxyRequest(url, options = {}) {
     // 对于AI API请求，尝试获取代理设置
     let proxyAddress = '';
     try {
-        if (chrome && chrome.storage && chrome.storage.sync) {
-            const result = await chrome.storage.sync.get(['proxyAddress']);
+        const storage = getExtensionStorage();
+        if (storage && storage.sync) {
+            const result = await storage.sync.get(['proxyAddress']);
             proxyAddress = result.proxyAddress || '';
         }
     } catch (error) {

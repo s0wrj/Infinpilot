@@ -1,5 +1,5 @@
 /**
- * Pagetalk - Utility Functions
+ * Infinpilot - Utility Functions
  */
 
 /**

@@ -1,0 +1,10 @@
+infinipilot-agent-sdk/
+node_modules/
+dist/
+__tmp_slice.txt
+
+.vscode/
+.idea/
+
+*.log
+*.tmp

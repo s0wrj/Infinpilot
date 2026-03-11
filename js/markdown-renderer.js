@@ -32,7 +32,9 @@ function initMarkdownRenderer() {
                 // Don't highlight mermaid code blocks, just wrap them for Mermaid library
                 // We still escape the content just in case, though Mermaid might handle it.
                 // Let's return the raw string as Mermaid expects it.
-                return `<pre class="mermaid">${str}</pre>`;
+                // Escape HTML entities and quotes to prevent syntax errors in Mermaid
+                const escapedStr = escapeHtml(str);
+                return `<pre class="mermaid" data-mermaid-definition="${escapedStr}">${str}</pre>`;
             }
             // --- End Mermaid ---
 
@@ -143,6 +145,13 @@ function renderMarkdown(content) {
 function preprocessContent(content) {
     // 规范化换行符
     let processedContent = content.replace(/\r\n/g, '\n');
+
+    // 移除模型思考过程中的特定标签
+    // Using [\s\S]*? to match across newlines non-greedily
+    processedContent = processedContent.replace(/<think>[\s\S]*?<\/think>/g, '');
+    processedContent = processedContent.replace(/<tool_code>[\s\S]*?<\/tool_code>/g, '');
+    // Also remove stray opening/closing tags that might be left over
+    processedContent = processedContent.replace(/<\/?(think|tool_code|result|observation)>/g, '');
     
     // 处理连续的三个或更多换行符，避免过多空白
     processedContent = processedContent.replace(/\n{3,}/g, '\n\n');

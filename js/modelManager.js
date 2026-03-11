@@ -1,5 +1,5 @@
 /**
- * PageTalk - 统一模型管理模块
+ * InfinPilot - 统一模型管理模块
  *
  * 这个模块负责管理所有模型相关的逻辑，包括：
  * 1. 默认模型定义（包括逻辑别名模型）
@@ -139,7 +139,7 @@ class ModelManager {
      */
     async loadFromStorage() {
         return new Promise((resolve) => {
-            chrome.storage.sync.get([
+            browser.storage.sync.get([
                 STORAGE_KEYS.MANAGED_MODELS,
                 STORAGE_KEYS.USER_ACTIVE_MODELS,
                 STORAGE_KEYS.PROVIDER_SETTINGS,
@@ -148,8 +148,8 @@ class ModelManager {
                 STORAGE_KEYS.OLD_API_KEY,
                 STORAGE_KEYS.OLD_SELECTED_MODELS
             ], (result) => {
-                if (chrome.runtime.lastError) {
-                    console.error('[ModelManager] Storage load error:', chrome.runtime.lastError);
+                if (browser.runtime.lastError) {
+                    console.error('[ModelManager] Storage load error:', browser.runtime.lastError);
                     resolve();
                     return;
                 }
@@ -227,9 +227,9 @@ class ModelManager {
                 [STORAGE_KEYS.MODEL_MANAGER_VERSION]: CURRENT_VERSION
             };
 
-            chrome.storage.sync.set(data, () => {
-                if (chrome.runtime.lastError) {
-                    console.error('[ModelManager] Storage save error:', chrome.runtime.lastError);
+            browser.storage.sync.set(data, () => {
+                if (browser.runtime.lastError) {
+                    console.error('[ModelManager] Storage save error:', browser.runtime.lastError);
                 } else {
                     console.log('[ModelManager] Saved to storage successfully');
                     // 广播模型更新事件
@@ -246,17 +246,17 @@ class ModelManager {
     broadcastModelsUpdated() {
         try {
             // 通过background.js广播到所有标签页
-            chrome.runtime.sendMessage({
+            browser.runtime.sendMessage({
                 action: 'broadcastModelsUpdated'
             }, (response) => {
                 // 检查运行时是否仍然有效
-                if (chrome.runtime.lastError) {
+                if (browser.runtime.lastError) {
                     // 如果是消息通道关闭错误，不记录为错误，这是正常的
-                    if (chrome.runtime.lastError.message.includes('message channel closed') ||
-                        chrome.runtime.lastError.message.includes('receiving end does not exist')) {
+                    if (browser.runtime.lastError.message.includes('message channel closed') ||
+                        browser.runtime.lastError.message.includes('receiving end does not exist')) {
                         console.log('[ModelManager] Message channel closed during broadcast (normal during extension reload)');
                     } else {
-                        console.warn('[ModelManager] Broadcast message error:', chrome.runtime.lastError.message);
+                        console.warn('[ModelManager] Broadcast message error:', browser.runtime.lastError.message);
                     }
                 } else if (response) {
                     console.log('[ModelManager] Models updated broadcast sent successfully');
@@ -307,7 +307,7 @@ class ModelManager {
 
         // 如果新结构中没有，检查旧版本的API key（同步方式）
         try {
-            // 这里我们需要同步检查，但chrome.storage是异步的
+            // 这里我们需要同步检查，但browser.storage是异步的
             // 我们将在migrateIfNeeded中处理旧版本API key的迁移
             // 所以这里只检查已经迁移到新结构的API key
             return false;
@@ -322,7 +322,7 @@ class ModelManager {
      */
     async migrateIfNeeded() {
         return new Promise((resolve) => {
-            chrome.storage.sync.get([
+            browser.storage.sync.get([
                 STORAGE_KEYS.MODEL_MANAGER_VERSION,
                 STORAGE_KEYS.OLD_API_KEY,
                 STORAGE_KEYS.OLD_SELECTED_MODELS
@@ -372,7 +372,7 @@ class ModelManager {
                     await this.saveToStorage();
 
                     // 清理旧的存储键
-                    chrome.storage.sync.remove([
+                    browser.storage.sync.remove([
                         STORAGE_KEYS.OLD_API_KEY,
                         STORAGE_KEYS.OLD_SELECTED_MODELS
                     ], () => {
@@ -1175,7 +1175,7 @@ class ModelManager {
 
             // 从存储读取自定义提供商，避免依赖 UI 加载顺序
             const storedCustomIds = await new Promise((resolve) => {
-                chrome.storage.sync.get(['customProviders'], (result) => {
+                browser.storage.sync.get(['customProviders'], (result) => {
                     const list = Array.isArray(result.customProviders) ? result.customProviders : [];
                     resolve(list.map(p => p.id));
                 });

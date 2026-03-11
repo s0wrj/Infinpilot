@@ -1,0 +1,85 @@
+{
+  "manifest_version": 3,
+  "name": "InfinPilot - Your Browser Assistant",
+  "version": "5.4.0",
+  "description": "A browser assistant with infinite possibilities , not just Q&A.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "bookmarks",
+    "history",
+    "downloads",
+    "scripting",
+    "webNavigation",
+    "contextMenus",
+    "proxy",
+    "browsingData",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "128": "magic.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "js/lib/browser-polyfill.js",
+        "js/lib/Readability.js",
+        "js/lib/markdown-it.min.js",
+        "js/lib/highlight.min.js",
+        "js/lib/python.min.js",
+        "js/lib/r.min.js",
+        "js/lib/sql.min.js",
+        "js/lib/json.min.js",
+        "js/lib/katex.min.js",
+        "js/lib/auto-render.min.js",
+        "js/lib/mhchem.min.js",
+        "js/lib/mermaid.min.js",
+        "js/lib/panzoom.min.js",
+        "js/lib/lucide.js",
+        "js/translations.js",
+        "js/markdown-renderer.js",
+        "js/text-selection-helper.js",
+        "js/automation/content-automation.js",
+        "js/content.js"
+      ],
+      "css": [
+        "css/content-panel.css",
+        "css/text-selection-helper.css",
+        "css/github.min.css",
+        "css/github-dark-dimmed.min.css",
+        "css/katex.min.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "html/*",
+        "css/*",
+        "js/*",
+        "js/lib/*",
+        "magic.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+P",
+        "mac": "Alt+P"
+      },
+      "description": "Open InfinPilot panel"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * PageTalk - 供应商配置中心
+ * InfinPilot - 供应商配置中心
  * 
  * 这个模块是多供应商架构的核心配置文件，集中定义了所有支持的 AI 供应商及其基础信息。
  * 采用配置驱动的方式，使得添加新供应商变得极为简单。
@@ -347,7 +347,7 @@ export function getCustomProviders() {
 export async function saveCustomProviders() {
     const customProviders = getCustomProviders();
     return new Promise((resolve) => {
-        chrome.storage.sync.set({ customProviders }, () => {
+        browser.storage.sync.set({ customProviders }, () => {
             resolve();
         });
     });
@@ -358,7 +358,7 @@ export async function saveCustomProviders() {
  */
 export async function loadCustomProviders() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['customProviders'], (result) => {
+        browser.storage.sync.get(['customProviders'], (result) => {
             if (result.customProviders && Array.isArray(result.customProviders)) {
                 // 将自定义提供商添加到providers对象
                 result.customProviders.forEach(provider => {

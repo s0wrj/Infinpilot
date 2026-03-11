@@ -1,0 +1,21 @@
+{
+  "permissions": [
+    "offscreen",
+    "alarms",
+    "sidePanel"
+  ],
+  "side_panel": {
+    "default_path": "html/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "js/background-sw.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "InfinPilot",
+    "default_icon": "magic.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' https: http: ws: wss:;"
+  }
+}

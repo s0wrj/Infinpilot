@@ -1,5 +1,5 @@
 /**
- * PageTalk - API URL Utilities
+ * InfinPilot - API URL Utilities
  * Centralizes URL formatting for different providers
  */
 

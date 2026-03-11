@@ -1,5 +1,5 @@
 /**
- * PageTalk - Anthropic Claude API 适配器
+ * InfinPilot - Anthropic Claude API 适配器
  *
  * 处理 Anthropic Claude API 的请求格式转换和响应解析
  */
@@ -44,6 +44,16 @@ export async function anthropicAdapter(modelConfig, provider, providerSettings, 
     if (systemPrompt) {
         requestBody.system = systemPrompt;
     }
+
+    // Add tools if they exist in options
+    if (options.tools) {
+        const dict = (typeof getCurrentTranslations === 'function') ? getCurrentTranslations() : null;
+        requestBody.tools = options.tools.map(tool => ({
+            name: tool.name,
+            description: (dict && dict[tool.description]) || tool.description,
+            input_schema: tool.inputSchema
+        }));
+    }
     
     // 构建请求头
     const headers = {
@@ -69,7 +79,7 @@ export async function anthropicAdapter(modelConfig, provider, providerSettings, 
         }
         
         // 处理流式响应
-        await processAnthropicStreamResponse(response, streamCallback);
+        return await processAnthropicStreamResponse(response, streamCallback);
         
     } catch (error) {
         // 检查是否是用户主动中断的请求
@@ -150,6 +160,8 @@ async function processAnthropicStreamResponse(response, streamCallback) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = ''; // 用于缓存不完整的数据
+    let accumulatedText = '';
+    let functionCalls = [];
 
     try {
         while (true) {
@@ -171,7 +183,7 @@ async function processAnthropicStreamResponse(response, streamCallback) {
                         if (streamCallback) {
                             streamCallback('', true);
                         }
-                        return;
+                        return { text: accumulatedText, functionCalls };
                     }
 
                     // 跳过空的数据行
@@ -184,18 +196,29 @@ async function processAnthropicStreamResponse(response, streamCallback) {
 
                         // 处理不同类型的事件
                         if (data.type === 'content_block_delta') {
-                            const text = data.delta?.text || '';
-
-                            // 调用流式回调 - 修复：使用正确的参数格式 (chunk, isComplete)
-                            if (streamCallback) {
-                                streamCallback(text, false);
+                            const delta = data.delta;
+                            if (delta && delta.type === 'text_delta') {
+                                accumulatedText += delta.text;
+                                if (streamCallback) {
+                                    streamCallback(delta.text, false);
+                                }
+                            } else if (delta && delta.type === 'input_json_delta') {
+                                // This is part of a tool call, not implemented yet
+                            }
+                        } else if (data.type === 'content_block_start') {
+                            const contentBlock = data.content_block;
+                            if (contentBlock && contentBlock.type === 'tool_use') {
+                                functionCalls.push({
+                                    name: contentBlock.name,
+                                    args: contentBlock.input
+                                });
                             }
                         } else if (data.type === 'message_stop') {
                             // Anthropic 特有的结束事件
                             if (streamCallback) {
                                 streamCallback('', true);
                             }
-                            return;
+                            return { text: accumulatedText, functionCalls };
                         }
                     } catch (parseError) {
                         // 只在调试模式下显示详细错误，避免控制台噪音
@@ -216,7 +239,7 @@ async function processAnthropicStreamResponse(response, streamCallback) {
                     if (streamCallback) {
                         streamCallback('', true);
                     }
-                    return;
+                    return { text: accumulatedText, functionCalls };
                 }
 
                 if (jsonStr) {
@@ -224,15 +247,18 @@ async function processAnthropicStreamResponse(response, streamCallback) {
                         const data = JSON.parse(jsonStr);
 
                         if (data.type === 'content_block_delta') {
-                            const text = data.delta?.text || '';
-                            if (streamCallback) {
-                                streamCallback(text, false);
+                            const delta = data.delta;
+                            if (delta && delta.type === 'text_delta') {
+                                accumulatedText += delta.text;
+                                if (streamCallback) {
+                                    streamCallback(delta.text, false);
+                                }
                             }
                         } else if (data.type === 'message_stop') {
                             if (streamCallback) {
                                 streamCallback('', true);
                             }
-                            return;
+                            return { text: accumulatedText, functionCalls };
                         }
                     } catch (parseError) {
                         console.debug('[AnthropicAdapter] Failed to parse final SSE data:', parseError.message);
@@ -245,6 +271,7 @@ async function processAnthropicStreamResponse(response, streamCallback) {
         if (streamCallback) {
             streamCallback('', true);
         }
+        return { text: accumulatedText, functionCalls };
     } finally {
         reader.releaseLock();
     }

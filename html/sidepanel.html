@@ -3,58 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PageTalk</title>
+    <title>Infinpilot</title>
     <link rel="stylesheet" href="../css/sidepanel.css">
     <!-- Highlight.js Themes -->
     <link rel="stylesheet" href="../css/github.min.css">
     <link rel="stylesheet" href="../css/github-dark-dimmed.min.css">
     <!-- KaTeX CSS -->
     <link rel="stylesheet" href="../css/katex.min.css">
+    <link rel="stylesheet" href="../css/_deep-research.css">
+    <link rel="stylesheet" href="../css/_editor.css">
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="../js/lib/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="../js/lib/codemirror/theme/material-darker.css">
+    <link rel="stylesheet" href="../js/lib/codemirror/theme/material.css">
+    <link rel="stylesheet" href="../js/lib/codemirror/addon/dialog/dialog.css">
     <!-- Highlight.js Core & Languages -->
     <script src="../js/lib/highlight.min.js"></script>
     <script src="../js/lib/python.min.js"></script>
     <script src="../js/lib/r.min.js"></script>
     <script src="../js/lib/sql.min.js"></script>
-    <script type="module" src="../js/lib/java.min.js"></script>
-    <script type="module" src="../js/lib/javascript.min.js"></script>
+    <script src="../js/historyManager.js"></script>
+
     <script src="../js/lib/json.min.js"></script>
     <!-- 使用本地markdown-it库 -->
     <script src="../js/lib/markdown-it.min.js"></script>
+    <!-- CodeMirror JS -->
+    <script src="../js/lib/codemirror/lib/codemirror.js"></script>
+    <script src="../js/lib/codemirror/mode/markdown/markdown.js"></script>
+    <!-- CodeMirror Addons -->
+    <script src="../js/lib/codemirror/addon/dialog/dialog.js"></script>
+    <script src="../js/lib/codemirror/addon/search/searchcursor.js"></script>
+    <script src="../js/lib/codemirror/addon/search/search.js"></script>
     <!-- 添加我们的Markdown渲染器 -->
     <script src="../js/markdown-renderer.js"></script>
+    <!-- i18n helper -->
+    <script type="module" src="../js/utils/i18n.js"></script>
 </head>
 <body>
+    <script src="../js/lib/browser-polyfill.js"></script>
     <div class="container">
         <main>
             <!-- 聊天界面 -->
             <section id="chat" class="tab-content active">
-                <div class="chat-container">
+                <div class="chat-container animate-slide-up">
                     <div class="chat-header">
-                        <div class="chat-model-selector">
-                            <label for="chat-model-selection">模型：</label>
-                            <select id="chat-model-selection" aria-label="选择模型">
-                                <!-- 这里的选项会通过 JavaScript 动态填充 -->
-                            </select>
+                        <div class="chat-header-brand">
+                            <div class="chat-brand-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                    <path d="M2 17l10 5 10-5"></path>
+                                    <path d="M2 12l10 5 10-5"></path>
+                                </svg>
+                            </div>
+                            <span class="chat-brand-name">Infinpilot</span>
                         </div>
-                        <!-- 添加助手选择器 -->
-                        <div class="chat-agent-selector">
-                            <label for="chat-agent-selection">助手：</label>
-                            <select id="chat-agent-selection" aria-label="选择助手">
-                                <!-- 这里的选项会通过 JavaScript 动态填充 -->
-                            </select>
+                        <div class="chat-selectors-wrapper">
+                            <div class="chat-header-row">
+                                <div class="chat-agent-selector">
+                                    <label for="chat-agent-selection">助手</label>
+                                    <select id="chat-agent-selection" aria-label="选择助手">
+                                        <!-- 这里的选项会通过 JavaScript 动态填充 -->
+                                    </select>
+                                </div>
+                                <div class="chat-db-selector">
+                                    <label for="db-selector">知识库</label>
+                                    <select id="db-selector" aria-label="选择知识库">
+                                        <option value="null">不使用</option>
+                                        <!-- Options will be dynamically populated by JavaScript -->
+                                    </select>
+                                </div>
+                                <div class="chat-project-selector">
+                                    <label for="project-selector">项目</label>
+                                    <div class="project-selector-control">
+                                        <select id="project-selector" aria-label="选择项目"></select>
+                                        <button id="project-create-btn" type="button" class="project-create-btn" title="新建项目">+</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button id="clear-context" data-i18n-title="clearContextTitle" title="清除上下文和聊天记录" class="action-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                            </svg>
-                        </button>
-                        <!-- 添加关闭面板按钮 -->
-                        <button id="close-panel" data-i18n-title="closePanelTitle" title="关闭面板" class="action-button close-panel-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-                            </svg>
-                        </button>
+                        <div class="chat-header-actions">
+                            <button id="chat-history-btn" data-i18n-title="chatHistoryTitle" title="聊天记录" class="action-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </button>
+                            <button id="clear-context" data-i18n-title="clearContextTitle" title="新建聊天" class="action-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5v14M5 12h14"></path>
+                                </svg>
+                            </button>
+                            <button id="close-panel" data-i18n-title="closePanelTitle" title="关闭面板" class="action-button close-panel-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 6L6 18M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="project-summary-card" id="project-summary-card">
+                        <div class="project-summary-header">
+                            <span class="project-summary-label">当前项目</span>
+                            <button id="project-refresh-btn" type="button" class="project-summary-refresh">刷新</button>
+                        </div>
+                        <div class="project-summary-title" id="project-summary-title">未选择项目</div>
+                        <div class="project-summary-meta" id="project-summary-meta">项目素材 0 个</div>
+                        <div class="project-summary-items" id="project-summary-items"></div>
                     </div>
                     <div class="chat-messages" id="chat-messages">
                         <!-- 欢迎消息将通过JavaScript动态创建 -->
@@ -90,42 +143,312 @@
                     </div>
                     <!-- 新增：聊天界面状态消息区域 -->
                     <div id="chat-status-message" class="chat-status"></div>
-                    <div class="chat-input">
-                        <!-- 添加图片上传按钮 -->
-                        <button id="upload-image" data-i18n-title="uploadImageTitle" title="上传图片" class="upload-image-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                                <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54A.505.505 0 0 1 1 12.5v-9a.5.5 0 0 1 .5-.5h13z"/>
-                            </svg>
-                        </button>
-                        <!-- 添加YouTube URL输入按钮 -->
-                        <button id="add-youtube-url" data-i18n-title="addYoutubeLinkTitle" class="youtube-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.007 2.007 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.007 2.007 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31.4 31.4 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.007 2.007 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A99.788 99.788 0 0 1 7.858 2h.193zM6.4 5.209v4.818l4.157-2.408L6.4 5.209z"/>
-                            </svg>
-                        </button>
-                        <!-- 隐藏的文件输入框 -->
+                    
+                    <div class="chat-input-area">
+                        <div class="chat-input-toolbar">
+                            <!-- 模型选择器 -->
+                            <div class="toolbar-selector">
+                                <select id="chat-model-selection" aria-label="选择模型">
+                                    <!-- 这里的选项会通过 JavaScript 动态填充 -->
+                                </select>
+                            </div>
+                            <div id="chat-agent-toolbar-slot" class="toolbar-selector toolbar-agent-slot"></div>
+                            <div class="toolbar-divider"></div>
+                            <div class="toolbar-toggle-group" id="toolbar-automation-group">
+                                <button id="automation-toggle-btn" title="Browser Automation: Off" class="icon-btn automation-toggle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                        <path d="M10 16h2.5a1.5 1.5 0 0 0 1.5 -1.5v-2.5a1.5 1.5 0 0 0 -1.5 -1.5h-5a1.5 1.5 0 0 0 -1.5 1.5v2.5a1.5 1.5 0 0 0 1.5 1.5h2.5"></path>
+                                        <path d="M15 11v-1.5a1.5 1.5 0 0 0 -1.5 -1.5h-5a1.5 1.5 0 0 0 -1.5 1.5v2.5a1.5 1.5 0 0 0 1.5 1.5h1.5"></path>
+                                        <path d="M12 21l0 -5"></path>
+                                        <path d="M9 18l6 0"></path>
+                                    </svg>
+                                </button>
+                                <button id="deep-research-btn" class="icon-btn" data-i18n-title="deep_research_toggle">
+                                    <i data-lucide="brain-circuit"></i>
+                                </button>
+                                <button id="collective-research-btn" class="icon-btn" title="群体研究">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                        <path d="M17 21v-2a4 4 0 0 0 -4 -4h-6a4 4 0 0 0 -4 4v2"></path>
+                                        <path d="M9 7a4 4 0 1 0 0 8a4 4 0 0 0 0 -8"></path>
+                                        <path d="M22 21v-2a4 4 0 0 0 -3 -3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <button id="fetch-page-content" data-i18n-title="fetchPageContentTitle" title="获取当前页面内容" class="icon-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path
+                                        d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                                </svg>
+                            </button>
+                            <button id="file-input-btn" data-i18n-title="uploadFileTitle" title="上传文件" class="icon-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path
+                                        d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                                    <path
+                                        d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                                </svg>
+                            </button>
+                            <button id="upload-image" data-i18n-title="uploadImageTitle" title="上传图片" class="icon-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                                    <path
+                                        d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54A.505.505 0 0 1 1 12.5v-9a.5.5 0 0 1 .5-.5h13z" />
+                                </svg>
+                            </button>
+                            <button id="add-youtube-url" data-i18n-title="addYoutubeLinkTitle" class="icon-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path
+                                        d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.007 2.007 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.007 2.007 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31.4 31.4 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.007 2.007 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A99.788 99.788 0 0 1 7.858 2h.193zM6.4 5.209v4.818l4.157-2.408L6.4 5.209z" />
+                                </svg>
+                            </button>
+                            
+                            
+                            <button id="add-content-to-db-btn" title="将当前内容添加到知识库" class="icon-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 1.5c-2.42 0-4.5 1.06-4.5 2.5S5.58 6.5 8 6.5s4.5-1.06 4.5-2.5S10.42 1.5 8 1.5z"/>
+                                    <path d="M3.5 5.404V8.5c0 1.44 2.02 2.5 4.5 2.5s4.5-1.06 4.5-2.5V5.404c-.5.44-1.52.81-2.75.995C8.75 6.48 8.38 6.5 8 6.5s-.75-.02-1.75-.095C5.02 6.214 4 5.844 3.5 5.404zM8 13c-2.42 0-4.5-1.06-4.5-2.5V8.268C4.02 8.61 5.02 8.91 6.25 9.095 7.25 9.18 7.62 9.2 8 9.2s.75-.02 1.75-.095C10.98 8.91 11.98 8.61 12.5 8.268V10.5c0 1.44-2.02 2.5-4.5 2.5z"/>
+                                    <path d="M3.5 10.904V14c0 1.44 2.02 2.5 4.5 2.5s4.5-1.06 4.5-2.5v-3.096c-.5.44-1.52.81-2.75.995C8.75 11.98 8.38 12 8 12s-.75-.02-1.75-.095C5.02 11.714 4 11.344 3.5 10.904z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="chat-input-wrapper">
+                            <div class="chat-input">
+                                <div class="chat-input-main-row">
+                                    <div class="chat-input-field">
+                                        <textarea id="user-input" data-i18n-placeholder="userInputPlaceholder" placeholder="..."></textarea>
+                                    </div>
+                    
+                                    <div class="chat-input-send">
+                                        <button id="send-message" data-i18n-title="sendMessageTitle" title="发送消息">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                                viewBox="0 0 16 16">
+                                                <path
+                                                    d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11v-.001ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
                         <input type="file" id="file-input" accept="image/*" multiple style="display: none;">
-                        <textarea id="user-input" data-i18n-placeholder="userInputPlaceholder" placeholder="..."></textarea>
-                        <button id="send-message" data-i18n-title="sendMessageTitle" title="发送消息">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11v-.001ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
-                            </svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 编辑器界面 -->
+            <section id="editor" class="tab-content">
+                <div class="editor-container">
+                    <div class="editor-toolbar">
+                    <div class="editor-toolbar-group">
+                        <button id="md-new" class="editor-tool-button" title="新建文档" data-i18n-title="editorNew">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                         </button>
+                        <button id="md-import" class="editor-tool-button" title="导入" data-i18n-title="editorImport">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </button>
+                        <button id="md-export" class="editor-tool-button" title="导出" data-i18n-title="editorExport">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        </button>
+                        <input id="md-import-input" type="file" accept="*" style="display:none" />
+                    </div>
+                    <div class="editor-toolbar-separator"></div>
+                    <div class="editor-toolbar-group">
+                        <button id="md-docx-toggle" class="editor-tool-button" title="DOCX 编辑器" data-i18n-title="editorDocxToggle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </button>
+                        <button id="md-new-docx" class="editor-tool-button" title="新建 DOCX 文档" data-i18n-title="editorNewDocx">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                        </button>
+                        <button id="md-sheet-toggle" class="editor-tool-button" title="表格编辑器" data-i18n-title="editorSheetToggle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0-6v6m18-6v6"></path></svg>
+                        </button>
+                        <button id="md-new-sheet" class="editor-tool-button" title="新建表格文档" data-i18n-title="editorNewSheet">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M9 3v18"></path><path d="M3 9h18"></path><path d="M3 15h18"></path></svg>
+                        </button>
+                        <button id="md-svg-toggle" class="editor-tool-button" title="SVG Editor">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-8 14z"></path><path d="M9 10h6"></path></svg>
+                        </button>
+                        <button id="md-new-svg" class="editor-tool-button" title="New SVG">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 12v6"></path><path d="M9 15h6"></path></svg>
+                        </button>
+                    </div>
+                    <div class="editor-toolbar-separator"></div>
+                    <div class="editor-toolbar-group">
+                        <div class="dropdown-container">
+                            <button id="md-insert-dropdown-btn" class="editor-tool-button" title="插入" data-i18n-title="editorInsert">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            </button>
+                            <div class="dropdown-menu" id="md-insert-menu">
+                                <button id="md-insert-current-url" data-i18n="editorInsertCurrentUrl">插入当前网址</button>
+                                <button id="md-insert-open-tabs" data-i18n="editorInsertAllTabs">插入全部打开标签</button>
+                                <button id="md-insert-screenshot" data-i18n="editorInsertScreenshot">插入截图</button>
+                            </div>
+                        </div>
+                    </div>
+<div class="editor-toolbar-separator"></div>
+
+<!-- 新增：格式化工具栏 -->
+<div class="editor-toolbar-group" id="md-format-group">
+    <button id="md-bold" class="editor-tool-button" title="加粗 (Ctrl+B)"><b>B</b></button>
+    <button id="md-italic" class="editor-tool-button" title="斜体 (Ctrl+I)"><i>I</i></button>
+    <button id="md-strikethrough" class="editor-tool-button" title="删除线"><s>S</s></button>
+    <button id="md-code" class="editor-tool-button" title="行内代码">`</>`</button>
+    <button id="md-link" class="editor-tool-button" title="链接">🔗</button>
+    <button id="md-list-ul" class="editor-tool-button" title="无序列表">•</button>
+    <button id="md-list-ol" class="editor-tool-button" title="有序列表">1.</button>
+</div>
+
+<div class="editor-toolbar-separator"></div>
+                    <div class="editor-toolbar-group view-group">
+                        <button id="md-view-edit" class="editor-tool-button" title="仅编辑" data-i18n-title="editorViewEdit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                        </button>
+                        <button id="md-view-split" class="editor-tool-button active" title="左右分屏" data-i18n-title="editorViewSplit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+                        </button>
+                        <button id="md-view-split-vertical" class="editor-tool-button" title="上下分屏" data-i18n-title="editorViewSplitVertical">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="12" x2="21" y2="12"></line></svg>
+                        </button>
+                        <button id="md-view-preview" class="editor-tool-button" title="仅预览" data-i18n-title="editorViewPreview">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                    </div>
+
+                    <div class="toolbar-spacer"></div>
+
+                    <div class="editor-toolbar-separator"></div>
+
+                    <div class="editor-toolbar-group">
+                        
+                        <div class="dropdown-container">
+                            <button id="md-ai-dropdown-btn" class="editor-tool-button" title="AI 协作" data-i18n-title="editorAiCollaborate">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.06 2.46a2.5 2.5 0 0 1 3.38 0L15 5l.15-2.81a2.5 2.5 0 0 1 4.24 2.12L18 7l2.5.15a2.5 2.5 0 0 1 2.12 4.24L20 12l2.81.15a2.5 2.5 0 0 1-2.12 4.24L18 17l-.15 2.81a2.5 2.5 0 0 1-4.24-2.12L15 19l-2.56 2.56a2.5 2.5 0 0 1-3.38 0L9 19l-.15 2.81a2.5 2.5 0 0 1-4.24-2.12L6 17l-2.5-.15a2.5 2.5 0 0 1-2.12-4.24L4 12l-2.81-.15a2.5 2.5 0 0 1 2.12-4.24L6 7l.15-2.81a2.5 2.5 0 0 1 4.24-2.12L9 5l2.56-2.54z"></path><path d="M12 12v.01"></path></svg>
+                            </button>
+                            <div class="dropdown-menu" id="md-ai-menu">
+                                <button class="ai-action-button" data-action="outline" data-i18n="editorAIGenerateOutline">生成大纲</button>
+                                <button class="ai-action-button" data-action="continue" data-i18n="editorAIContinueWriting">续写</button>
+                                <button class="ai-action-button" data-action="rewrite-selection" data-i18n="editorAIRewriteSelection">改写所选</button>
+                                <button class="ai-action-button" data-action="polish-selection" data-i18n="editorAIPolishSelection">润色所选</button>
+                                <button class="ai-action-button" data-action="fix-grammar" data-i18n="editorAIFixGrammar">修复语法</button>
+                            </div>
+                        </div>
+                        <div id="md-ai-custom-prompt-container" class="editor-toolbar-group" style="display: none;">
+                            <input type="text" id="md-ai-custom-prompt-input" placeholder="Enter your prompt for the selected text...">
+                            <button id="md-ai-custom-prompt-submit" data-i18n="editorAICustomPromptSubmit">Submit</button>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="md-ai-include-page-content">
+                            <label for="md-ai-include-page-content" data-i18n="editorAIIncludePageContent">包含页面内容</label>
+                        </div>
+                    </div>
+                </div>
+                    <div class="editor-project-bar">
+                        <div class="editor-project-selector">
+                            <span class="editor-project-label">项目</span>
+                            <select id="editor-project-selector" aria-label="选择项目"></select>
+                            <button id="editor-project-create-btn" type="button" class="editor-project-create-btn">新建</button>
+                        </div>
+                        <div class="editor-project-actions">
+                            <button id="editor-add-current-file-to-project" type="button" class="editor-project-action-btn">加入当前文件</button>
+                            <span id="editor-project-file-status" class="editor-project-file-status">当前文件未加入项目</span>
+                        </div>
+                    </div>
+                    <div class="editor-files-bar" id="editor-files-bar">
+                        <button class="editor-tree-toggle" id="editor-tree-toggle" title="文件树">☰</button>
+                        <div class="editor-files-tabs" id="editor-files-tabs"></div>
+                        <button class="editor-new-file-btn" id="editor-new-file-btn" title="新建文件">+</button>
+                    </div>
+                    <div class="editor-file-tree" id="editor-file-tree">
+                        <div class="file-tree-header">
+                            <span>文件</span>
+                            <button class="file-tree-add-folder" id="file-tree-add-folder" title="新建文件夹">📁+</button>
+                            <button class="file-tree-add" id="file-tree-add" title="新建文件">+</button>
+                        </div>
+                        <div class="file-tree-project">
+                            <div class="editor-project-selector">
+                                <span class="editor-project-label">项目</span>
+                                <select id="editor-project-selector-tree" aria-label="选择项目"></select>
+                                <button id="editor-project-create-btn-tree" type="button" class="editor-project-create-btn">新建</button>
+                            </div>
+                            <div class="editor-project-actions">
+                                <button id="editor-add-current-file-to-project-tree" type="button" class="editor-project-action-btn">加入当前文件</button>
+                                <span id="editor-project-file-status-tree" class="editor-project-file-status">当前文件未加入项目</span>
+                            </div>
+                        </div>
+                        <div class="file-tree-content" id="file-tree-content"></div>
+                        <div class="file-tree-actions">
+                            <button class="file-tree-export-all" id="file-tree-export-all" title="导出所有文件">导出全部</button>
+                        </div>
+                    </div>
+                    <div class="editor-main split">
+                        <textarea id="md-editor" spellcheck="false" placeholder="在此编写 Markdown..."></textarea>
+                        <div class="editor-resizer" id="editor-resizer"></div>
+                        <div id="md-preview" class="md-preview"></div>
+                    </div>
+                    <!-- SuperDoc DOCX 编辑器容器 -->
+                    <div id="superdoc-toolbar" class="superdoc-toolbar" style="display: none;">
+                        <button id="superdoc-export" class="editor-tool-button" title="导出DOCX">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </button>
+                    </div>
+                    <div id="superdoc-editor" class="superdoc-editor" style="display: none;"></div>
+                    <!-- Univer Sheet 编辑器容器 -->
+                    <div id="sheet-editor" class="sheet-editor" style="display: none;"></div>
+                    <div id="svg-toolbar" class="svg-toolbar" style="display: none;">
+                        <button id="svg-export" class="editor-tool-button" title="Export SVG">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </button>
+                    </div>
+                    <iframe id="svg-editor" class="svg-editor" style="display: none;" title="SVG Editor"></iframe>
+                    <div class="editor-status">
+                        <span id="md-status-text" data-i18n="editorStatusReady">就绪</span>
+                        <span id="md-stats" style="margin-left: 16px;"></span>
                     </div>
                 </div>
             </section>
 
             <!-- 设置界面 -->
-            <section id="settings" class="tab-content">
+            <section id="settings" class="tab-content animate-slide-up">
+                <input type="file" id="import-to-db-input" accept=".md,.txt,text/plain,text/markdown" style="display: none;">
                 <div class="settings-container">
                     <!-- 设置内部导航 -->
                     <div class="settings-nav">
-                        <button class="settings-nav-btn" data-subtab="agent" data-i18n="agentSettingsNav">助手</button>
-                        <button class="settings-nav-btn" data-subtab="model" data-i18n="modelSettingsNav">模型</button>
-                        <button class="settings-nav-btn" data-subtab="text-selection-helper" data-i18n="textSelectionHelper">划词助手</button>
-                        <button class="settings-nav-btn" data-subtab="quick-actions" data-i18n="quickActionsNav">快捷操作</button>
-                        <button class="settings-nav-btn active" data-subtab="general" data-i18n="generalSettingsNav">通用</button>
+                        <button class="settings-nav-btn active" data-subtab="general" data-i18n="generalSettingsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            <span>通用</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="agent" data-i18n="agentSettingsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            <span>助手</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="model" data-i18n="modelSettingsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><path d="M12 6v6l4 2"></path></svg>
+                            <span>模型</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="text-selection-helper" data-i18n="textSelectionHelper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            <span>划词</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="quick-actions" data-i18n="quickActionsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                            <span>快捷</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="vector-db" data-i18n="vectorDbSettingsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            <span>知识库</span>
+                        </button>
+                        <button class="settings-nav-btn" data-subtab="automation" data-i18n="automationSettingsNav">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                            <span>自动化</span>
+                        </button>
                         <!-- 添加关闭按钮 -->
                          <button id="close-panel-settings" data-i18n-title="closePanelTitle" title="关闭面板" class="action-button close-panel-btn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -155,6 +478,36 @@
                                         <option value="zh-CN" data-i18n="langZh">简体中文</option>
                                         <option value="en" data-i18n="langEn">English</option>
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 用户资料设置卡片 -->
+                        <div class="setting-group">
+                            <div class="setting-card">
+                                <div class="setting-card-header">
+                                    <div class="setting-card-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </div>
+                                    <h3 class="setting-card-title" data-i18n="userProfileSettings">用户资料</h3>
+                                </div>
+                                <p class="setting-card-description" data-i18n="userProfileSettingsDescription">自定义您的头像和昵称。</p>
+                                <div class="setting-card-content">
+                                    <div class="setting-card-actions">
+                                        <label for="user-name-input" data-i18n="userNameLabel">昵称:</label>
+                                        <input type="text" id="user-name-input" class="setting-input" data-i18n-placeholder="userNamePlaceholder" placeholder="输入您的昵称">
+                                    </div>
+                                    <div class="setting-card-actions">
+                                        <label data-i18n="userAvatarLabel">头像</label>
+                                        <div class="avatar-upload-container">
+                                            <img id="user-avatar-preview" src="../icons/user.svg" alt="Avatar Preview" class="avatar-preview">
+                                            <label for="user-avatar-input" class="avatar-upload-label">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                <span>上传</span>
+                                            </label>
+                                            <input type="file" id="user-avatar-input" accept="image/*" style="display: none;">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -207,6 +560,47 @@
                                             <span data-i18n="testProxy">测试</span>
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Editor Appearance Settings -->
+                        <div class="setting-group">
+                            <div class="setting-card">
+                                <div class="setting-card-header">
+                                    <div class="setting-card-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="setting-card-title" data-i18n="editorAppearanceLabel">编辑器外观</h3>
+                                </div>
+                                <p class="setting-card-description" data-i18n="editorAppearanceDescription">自定义编辑器和预览区域的背景颜色。</p>
+                                <div class="setting-card-content editor-appearance-controls">
+                                    <div class="color-settings-grid">
+                                        <div class="color-setting-row">
+                                            <label for="editor-bg-color" data-i18n="editorBgColorLabel">编辑区背景:</label>
+                                            <input type="color" id="editor-bg-color">
+                                        </div>
+                                        <div class="color-setting-row">
+                                            <label for="preview-bg-color" data-i18n="previewBgColorLabel">预览区背景:</label>
+                                            <input type="color" id="preview-bg-color">
+                                        </div>
+                                        <div class="color-setting-row">
+                                            <div class="label-with-tooltip">
+                                                <label for="gutter-bg-color" data-i18n="editorGutterBgColorLabel">行号背景:</label>
+                                                <i class="tooltip-icon" data-i18n-title="editorGutterBgColorTooltip"></i>
+                                            </div>
+                                            <input type="color" id="gutter-bg-color">
+                                        </div>
+                                        <div class="color-setting-row">
+                                            <div class="label-with-tooltip">
+                                                <label for="linenumber-color" data-i18n="editorLinenumberColorLabel">行号文本:</label>
+                                                <i class="tooltip-icon" data-i18n-title="editorLinenumberColorTooltip"></i>
+                                            </div>
+                                            <input type="color" id="linenumber-color">
+                                        </div>
+                                    </div>
+                                    <button id="reset-editor-colors" class="setting-action-btn" data-i18n="resetToDefault">恢复默认</button>
                                 </div>
                             </div>
                         </div>
@@ -588,6 +982,84 @@
                             <div id="connection-status" class="connection-status"></div>
                         </div>
                     </div>
+
+                    <!-- Vector DB Settings -->
+                    <div id="settings-vector-db" class="settings-sub-content">
+                        <h2 data-i18n="vectorDbSettingsHeading">知识库管理</h2>
+                        <!-- Content will be added here by settings.js -->
+                        <input type="file" id="import-to-db-input" accept=".md,.txt,text/plain,text/markdown" style="display: none;">
+                    </div>
+
+                    <!-- Automation Settings -->
+                    <div id="settings-automation" class="settings-sub-content">
+                        <h2 data-i18n="automationSettingsHeading">浏览器自动化</h2>
+                        <div class="setting-card unified-settings-card">
+                            <div class="setting-card-header">
+                                <div>
+                                    <div class="setting-card-title" data-i18n="automationGlobalToggleLabel">启用浏览器自动化</div>
+                                    <div class="setting-card-description" data-i18n="automationGlobalToggleDesc">允许聊天模型调用浏览器自动化工具</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="automation-global-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Agent Configuration -->
+                        <div class="setting-card unified-settings-card agent-sdk-card">
+                            <div class="setting-card-header">
+                                <div>
+                                    <div class="setting-card-title" data-i18n="agentSdkConfigLabel">Agent 配置</div>
+                                    <div class="setting-card-description" data-i18n="agentSdkConfigDesc">配置 AI Agent 连接信息</div>
+                                </div>
+                                <div class="agent-sdk-status" id="agent-sdk-status">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">未配置</span>
+                                </div>
+                            </div>
+                            <div class="setting-card-content">
+                                <div class="agent-sdk-grid">
+                                    <div class="setting-item">
+                                        <label for="agent-sdk-endpoint" data-i18n="agentSdkEndpointLabel">API 端点</label>
+                                        <input type="url" id="agent-sdk-endpoint" class="unified-input" placeholder="https://api.anthropic.com" data-i18n-placeholder="agentSdkEndpointPlaceholder">
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="agent-sdk-model" data-i18n="agentSdkModelLabel">模型</label>
+                                        <input type="text" id="agent-sdk-model" class="unified-input" placeholder="claude-sonnet-4-5" data-i18n-placeholder="agentSdkModelPlaceholder">
+                                    </div>
+                                    <div class="setting-item full-width">
+                                        <label for="agent-sdk-apikey" data-i18n="agentSdkApiKeyLabel">API Key</label>
+                                        <input type="password" id="agent-sdk-apikey" class="unified-input" placeholder="sk-ant-..." data-i18n-placeholder="agentSdkApiKeyPlaceholder">
+                                    </div>
+                                    <div class="setting-item full-width">
+                                        <label for="agent-sdk-permission" data-i18n="agentSdkPermissionLabel">权限模式</label>
+                                        <select id="agent-sdk-permission" class="unified-select">
+                                            <option value="default" data-i18n="agentSdkPermissionDefault">每次请求确认</option>
+                                            <option value="acceptEdits" data-i18n="agentSdkPermissionEdits">自动批准编辑</option>
+                                            <option value="bypassPermissions" data-i18n="agentSdkPermissionBypass">跳过所有权限检查</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="setting-card-actions">
+                                    <button id="agent-sdk-save" class="unified-action-btn primary" data-i18n="agentSdkSave"><span>保存</span></button>
+                                    <button id="agent-sdk-test" class="unified-action-btn" data-i18n="agentSdkTest"><span>测试</span></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-card unified-settings-card">
+                            <div class="setting-card-header">
+                                <div>
+                                    <div class="setting-card-title" data-i18n="automationToolsListLabel">工具列表</div>
+                                    <div class="setting-card-description" data-i18n="automationToolsListDesc">可针对每个工具单独启用或关闭</div>
+                                </div>
+                                <div class="setting-card-actions">
+                                    <button id="automation-enable-all" class="unified-action-btn" data-i18n="automationEnableAll"><span data-i18n="automationEnableAll">全部开启</span></button>
+                                    <button id="automation-disable-all" class="unified-action-btn" data-i18n="automationDisableAll"><span data-i18n="automationDisableAll">全部关闭</span></button>
+                                </div>
+                            </div>
+                            <div id="automation-tools-list" class="tools-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <!-- Moved Theme Toggle Button -->
                 <button id="theme-toggle-btn" class="icon-btn theme-toggle-btn" data-i18n-title="themeToggleTitle" title="切换深色/浅色模式">
@@ -603,7 +1075,7 @@
             </section>
         </main>
 
-        <footer>
+        <footer class="animate-slide-up delay-3">
             <div class="status-bar">
                 <span id="context-status" data-i18n="contextStatusPrefix">上下文：</span>
                 <span id="connection-indicator" class="disconnected" data-i18n="connectionIndicatorDisconnected">未连接</span>
@@ -611,6 +1083,7 @@
             <!-- 更新后的底部导航栏 -->
             <ul class="footer-tabs">
                 <li class="footer-tab active" data-tab="chat" data-i18n="chatTab">聊天</li>
+                <li class="footer-tab" data-tab="editor" data-i18n="editorTab">编辑器</li>
                 <li class="footer-tab" data-tab="settings" data-i18n="settingsTab">设置</li>
             </ul>
         </footer>
@@ -690,14 +1163,30 @@
     <!-- Lucide 图标库 -->
     <script src="../js/lib/lucide.js"></script>
     <!-- Load Helper Modules BEFORE main.js -->
+    <script type="module" src="../js/utils/siliconflowAPI.js"></script>
+    <script type="module" src="../js/vectorDB.js"></script>
     <script type="module" src="../js/providerManager.js"></script>
     <script src="../js/modelManager.js"></script>
     <script type="module" src="../js/api.js"></script>
     <script src="../js/translations.js"></script>
     <!-- 新增: 加载更新日志模块 -->
     <script src="../js/changelog.js"></script>
+    <!-- Deep Research Scripts - MUST load before main.js (which imports chat.js) -->
+    <script src="../js/automation/initDeepResearch.js"></script>
+    <script src="../js/automation/subAgentEngine.js"></script>
     <!-- Load the main coordinator script as a module -->
     <script type="module" src="../js/main.js"></script>
+    <!-- SuperDoc DOCX Editor Library (Local) -->
+    <link href="../js/lib/superdoc/style.css" rel="stylesheet" />
+    <script src="../js/lib/superdoc/superdoc.umd.js"></script>
+    <!-- x-spreadsheet (Local) -->
+    <link href="../js/lib/xspreadsheet.css" rel="stylesheet" />
+    <!-- SheetJS for xlsx export -->
+    <script src="../js/lib/xlsx.full.min.js"></script>
+    <!-- Sheet Editor Loader -->
+    <script src="../js/lib/univer-sheet-loader.js"></script>
+    <!-- Load Markdown Editor logic -->
+    <script type="module" src="../js/editor.js"></script>
 
     <!-- 删除确认对话框 - 移动到body直接子元素以确保全屏遮罩 -->
     <div id="delete-confirm-dialog" class="dialog-overlay" style="display:none;">
@@ -710,5 +1199,21 @@
             </div>
         </div>
     </div>
+    <!-- Deep Research modules (loaded in dependency order) -->
+    <!-- Core Infrastructure -->
+    <script src="../js/research/eventBus.js"></script>
+    <script src="../js/research/plan.js"></script>
+    <script src="../js/research/settings.js"></script>
+    <!-- Tools (must be loaded before agents) -->
+    <script src="../js/research/tools/compute.js"></script>
+    <script src="../js/research/tools/crawl.js"></script>
+    <script src="../js/research/tools/web_search.js"></script>
+    <!-- Agents (depend on tools and plan) -->
+    <script src="../js/research/agents.js"></script>
+    <!-- Orchestrator (depends on agents and plan) -->
+    <script src="../js/research/orchestrator.js"></script>
+    <!-- UI Components (loaded last) -->
+    <script src="../js/research/ui/codemirror-editor.js"></script>
+    <script src="../js/research/ui/mount.js"></script>
 </body>
 </html>

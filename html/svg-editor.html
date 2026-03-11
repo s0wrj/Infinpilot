@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG 编辑器</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --bg: #f7f7f8;
+            --panel: #ffffff;
+            --panel-muted: #fbfbfc;
+            --border: #e3e5e8;
+            --border-strong: #d6d9de;
+            --text: #1f2328;
+            --text-muted: #667085;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+            --danger-soft: #fff1f2;
+            --shadow: 0 6px 20px rgba(16, 24, 40, 0.06);
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font: 13px/1.4 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+            box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
+
+        .toolbar::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .toolbar::-webkit-scrollbar-thumb {
+            background: #cfd4dc;
+            border-radius: 999px;
+        }
+
+        .toolbar-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding-right: 8px;
+            border-right: 1px solid var(--border);
+            flex: 0 0 auto;
+        }
+
+        .toolbar-group:last-of-type {
+            border-right: none;
+            padding-right: 0;
+        }
+
+        .tool-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 30px;
+            min-width: 30px;
+            padding: 0 10px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .tool-button:hover {
+            background: #f2f4f7;
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .tool-button.active {
+            background: var(--accent-soft);
+            border-color: #bfdbfe;
+            color: var(--accent);
+        }
+
+        .tool-button.danger:hover {
+            background: var(--danger-soft);
+            border-color: #fecdd3;
+            color: #be123c;
+        }
+
+        .control {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 30px;
+            padding: 0 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--panel-muted);
+            color: var(--text-muted);
+            flex: 0 0 auto;
+        }
+
+        .control label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .control input[type="color"] {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .control input[type="range"] {
+            width: 68px;
+            accent-color: var(--accent);
+        }
+
+        .control-value {
+            min-width: 24px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--text);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .toolbar-spacer {
+            flex: 1 0 12px;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            height: 28px;
+            max-width: 220px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--panel-muted);
+            color: var(--text-muted);
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            min-height: 0;
+            padding: 8px;
+            background:
+                linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
+                linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px) 0 0 / 24px 24px,
+                linear-gradient(180deg, #fcfcfd, #f6f7f9);
+        }
+
+        .canvas-frame {
+            position: absolute;
+            inset: 8px;
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        #stage {
+            width: 100%;
+            height: 100%;
+            display: block;
+            user-select: none;
+            cursor: crosshair;
+        }
+
+        #stage.select-mode {
+            cursor: default;
+        }
+
+        .selected-shape {
+            filter: drop-shadow(0 0 0.4rem rgba(37, 99, 235, 0.18));
+        }
+
+        @media (max-width: 760px) {
+            .toolbar {
+                gap: 6px;
+                padding: 5px 6px;
+            }
+
+            .tool-button {
+                padding: 0 8px;
+            }
+
+            .control input[type="range"] {
+                width: 54px;
+            }
+
+            .status-chip {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button id="tool-select" class="tool-button active" title="选择">选择</button>
+                <button id="tool-rect" class="tool-button" title="矩形">矩形</button>
+                <button id="tool-ellipse" class="tool-button" title="椭圆">椭圆</button>
+                <button id="tool-diamond" class="tool-button" title="菱形">菱形</button>
+                <button id="tool-line" class="tool-button" title="箭头">箭头</button>
+                <button id="tool-text" class="tool-button" title="文字">文字</button>
+            </div>
+
+            <div class="toolbar-group">
+                <button id="duplicate-btn" class="tool-button" title="复制">复制</button>
+                <button id="bring-front-btn" class="tool-button" title="置顶">置顶</button>
+                <button id="send-back-btn" class="tool-button" title="置底">置底</button>
+                <button id="delete-btn" class="tool-button danger" title="删除">删除</button>
+            </div>
+
+            <div class="toolbar-group">
+                <button id="center-btn" class="tool-button" title="居中">居中</button>
+                <button id="fit-btn" class="tool-button" title="适配">适配</button>
+                <button id="zoom-out-btn" class="tool-button" title="缩小">-</button>
+                <button id="zoom-reset-btn" class="tool-button" title="重置缩放"><span id="zoom-level">100%</span></button>
+                <button id="zoom-in-btn" class="tool-button" title="放大">+</button>
+            </div>
+
+            <div class="control">
+                <label for="fill-color">填充</label>
+                <input id="fill-color" type="color" value="#f8efe4" title="填充色">
+            </div>
+
+            <div class="control">
+                <label for="stroke-color">描边</label>
+                <input id="stroke-color" type="color" value="#1c1917" title="描边色">
+            </div>
+
+            <div class="control">
+                <label for="stroke-width">线宽</label>
+                <input id="stroke-width" type="range" min="1" max="12" value="3" title="描边宽度">
+                <span id="stroke-width-value" class="control-value">3</span>
+            </div>
+
+            <div class="control">
+                <label for="font-size">字号</label>
+                <input id="font-size" type="range" min="14" max="72" value="28" title="文字大小">
+                <span id="font-size-value" class="control-value">28</span>
+            </div>
+
+            <div class="control">
+                <label for="opacity">透明</label>
+                <input id="opacity" type="range" min="20" max="100" value="100" title="不透明度">
+                <span id="opacity-value" class="control-value">100%</span>
+            </div>
+
+            <div class="toolbar-spacer"></div>
+            <div id="status" class="status-chip" title="编辑器状态">就绪</div>
+        </div>
+
+        <div class="canvas-wrap">
+            <div class="canvas-frame">
+                <svg id="stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+                    <defs>
+                        <marker id="svg-editor-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                            <path d="M0,0 L10,5 L0,10 z" fill="#1c1917"></path>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/svg-editor.js"></script>
+</body>
+</html>
