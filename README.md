@@ -70,8 +70,3 @@ Firefox:
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click `Load Temporary Add-on`
 3. Select [manifest.firefox.json](manifest.firefox.json)
-
-## Notes
-
-- The repository contains proprietary code. See [LICENSE](LICENSE).
-- The generated `dist/` bundles and local dependencies are ignored from Git.
